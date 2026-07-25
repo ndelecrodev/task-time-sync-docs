@@ -1,0 +1,34 @@
+site_name: Task Time Sync — Documentação
+site_description: Documentação do pipeline de sincronização e do dashboard do time.
+theme:
+  name: material
+  language: pt-BR
+  palette:
+    primary: teal
+    accent: teal
+  features:
+    - navigation.tabs
+    - navigation.top
+    - search.suggest
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: pt
+          name: Português
+          default: true
+          build: true
+        - locale: en
+          name: English
+          build: true
+
+nav:
+  - Início: index.md
+  - Pipeline:
+      - Arquitetura: pipeline/architecture.md
+      - Modelo de dados: pipeline/data-model.md
+      - Decisões de design: pipeline/design-decisions.md
+  - Dashboard:
+      - Visão geral: dashboard/overview.md  
