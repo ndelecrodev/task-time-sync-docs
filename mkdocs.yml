@@ -1,4 +1,5 @@
 site_name: Task Time Sync — Documentação
+site_url: https://ndelecrodev.github.io/task-time-sync-docs/
 site_description: Documentação do pipeline de sincronização e do dashboard do time.
 theme:
   name: material
