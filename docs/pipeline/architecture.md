@@ -42,6 +42,8 @@ de sincronização isoladas entre si.
                                ─▶ tabelas tarefas, detalhes_tarefa, etiquetas, tarefa_etiqueta
     PostgresClient.archive_missing_tasks
                                ─▶ marca tarefas.arquivada_em nas tarefas que sumiram do JIRA_JQL (nunca apaga)
+    ExcelWriter.mark_archived_tasks
+                               ─▶ espelha a mesma marca em BASE_TAREFAS.arquivada_em, sem tocar em mais nenhum campo da linha
 
  4. sync_clockify
     ClockifyClient.list_users
@@ -79,9 +81,11 @@ tabela e montar a lista de dicts por linha. Cada wrapper só fixa o nome da aba 
 da tabela que lê.
 
 Tarefas que somem do resultado do `JIRA_JQL` (fechadas fora do escopo, movidas,
-apagadas) não são removidas do Postgres: `PostgresClient.archive_missing_tasks`
+apagadas) não são removidas do Postgres nem do Excel: `PostgresClient.archive_missing_tasks`
 marca `tarefas.arquivada_em` com o timestamp da execução atual em toda linha cujo
-`task_id` não veio na busca, mantendo o histórico completo em vez de apagar.
+`task_id` não veio na busca, e `ExcelWriter.mark_archived_tasks` espelha essa mesma
+marca em `BASE_TAREFAS.arquivada_em`, sem tocar em nenhum outro campo da linha —
+mantendo o histórico completo nos dois destinos, em vez de apagar.
 
 ## Camadas
 

@@ -310,4 +310,28 @@ que continuam existindo no Jira, e o próximo `sync_jira` bem-sucedido não
 teria como recuperar o que foi perdido. Marcar com timestamp em vez de
 apagar deixa o problema visível e reversível.
 
-**Trade-off:** Cuidado ao mexer nisso: o conjunto usado para decidir o que arquivar precisa ser all_ids_from_jira (toda issue key devolvida pela busca crua ao Jira, antes de qualquer validação), não valid_ids (as tarefas que já passaram pela validação do Pydantic, decisão 8). Usar valid_ids faria uma issue descartada por validação (priority/tipo fora do enum, por exemplo) ser arquivada como se tivesse desaparecido do Jira, mesmo continuando ativa lá — confundindo "não veio nessa busca" com "veio, mas falhou na validação". Essa foi, de fato, uma versão inicial com esse bug, corrigida antes de entrar em produção.
+**Cuidado ao mexer nisso:** o conjunto usado para decidir o que arquivar precisa ser all_ids_from_jira (toda issue key devolvida pela busca crua ao Jira, antes de qualquer validação), não valid_ids (as tarefas que já passaram pela validação do Pydantic, decisão 8). Usar valid_ids faria uma issue descartada por validação (priority/tipo fora do enum, por exemplo) ser arquivada como se tivesse desaparecido do Jira, mesmo continuando ativa lá — confundindo "não veio nessa busca" com "veio, mas falhou na validação". Essa foi, de fato, uma versão inicial com esse bug, corrigida antes de entrar em produção.
+
+## 19. O arquivamento também é marcado na planilha, numa coluna que só recebe essa escrita
+
+`BASE_TAREFAS` ganhou a coluna `arquivada_em`, espelhando a coluna de mesmo
+nome em `tarefas` (decisão 18). `ExcelWriter.mark_archived_tasks` roda ao
+fim de `sync_jira`, depois de `archive_missing_tasks`, e busca as tarefas já
+arquivadas com `PostgresClient.get_archived_tasks` para escrever a data de
+arquivamento na planilha.
+
+**Por quê:** antes dessa mudança, uma tarefa arquivada ficava marcada só no
+Postgres; quem abrisse a planilha não tinha como saber que uma linha de
+`BASE_TAREFAS` correspondia a uma tarefa que já sumiu do Jira, a não ser
+consultando o banco diretamente. Escrever a mesma marca na planilha deixa
+essa informação visível para quem só usa o Excel.
+
+**Trade-off:** `mark_archived_tasks` escreve exclusivamente a célula de
+`arquivada_em`; não chama `_write_task_row` nem qualquer outro caminho que
+regrave `titulo`, `status`, `prazo` ou qualquer outro campo da linha. Isso é
+proposital: uma tarefa arquivada não recebe mais atualizações do Jira, então
+seus outros campos devem continuar congelados no último valor real que
+tinham antes de a tarefa desaparecer da busca, não serem sobrescritos ou
+zerados. Se um `task_id` vindo do Postgres não tiver linha correspondente em
+`BASE_TAREFAS` (não deveria acontecer, já que a tarefa foi escrita lá antes
+de ser arquivada), o método pula essa tarefa em vez de lançar erro.

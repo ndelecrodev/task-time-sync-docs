@@ -130,14 +130,18 @@ minúsculas, primeira coluna sempre é o ID usado no upsert.
 
 | Aba | Tabela | Colunas | Escrita por |
 |---|---|---|---|
-| `BASE_TAREFAS` | `base_tarefas` | id, titulo, responsavel, area, prioridade, status, data_criacao, prazo, data_conclusao, **dias_restantes**, **atrasado**, **status_prazo**, tipo, criador, data_atualizacao | `save_tasks` |
+| `BASE_TAREFAS` | `base_tarefas` | id, titulo, responsavel, area, prioridade, status, data_criacao, prazo, data_conclusao, **dias_restantes**, **atrasado**, **status_prazo**, tipo, criador, data_atualizacao, arquivada_em | `save_tasks` |
 | `DETALHES_TAREFA` | `detalhes_tarefa` | id, descricao | `save_details` |
 | `BASE_HORAS` | `base_horas` | id, funcionario, data, horas | `save_hours` |
 | `DIM_ETIQUETAS` | `dim_etiquetas` | id_etiqueta, nome_etiqueta | `save_tags` |
 | `FATO_TAREFA_ETIQUETA` | `fato_tarefa_etiqueta` | id_tarefa, id_etiqueta | `save_tags` |
 
 As três colunas em **negrito** são calculadas por fórmula do Excel; o Python
-apenas replica o texto da fórmula quando cria uma linha nova.
+apenas replica o texto da fórmula quando cria uma linha nova. `arquivada_em`
+também foge à regra: quem escreve nela é `ExcelWriter.mark_archived_tasks`, não
+`save_tasks`, e é a única coluna ainda tocada numa linha depois que a tarefa
+some do Jira — todo o resto da linha arquivada fica congelado no último valor
+conhecido, por design (ver decisão de design #19).
 
 `Task` → `BASE_TAREFAS` é definido pelo dict `TASK_COLUMN_MAP` em
 `integrations/excel_writer.py`. O lado esquerdo é o cabeçalho literal da coluna na
