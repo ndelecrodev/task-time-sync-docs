@@ -1,6 +1,6 @@
 # Task Time Sync — Docs
 
-MkDocs Material site documenting the [task-time-sync](https://github.com/SEU-USUARIO/task-time-sync)
+MkDocs Material site documenting the [task-time-sync](https://github.com/ndelecrodev/task-time-sync)
 pipeline and its dashboard: how they work, the data model they share, and
 the reasoning behind the non-obvious design choices.
 

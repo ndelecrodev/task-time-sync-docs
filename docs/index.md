@@ -5,7 +5,7 @@ Clockify, e um dashboard que o time usa para acompanhar o resultado.
 
 ## As duas partes
 
-**Pipeline** ([repositório](https://github.com/SEU-USUARIO/task-time-sync))
+**Pipeline** ([repositório](https://github.com/ndelecrodev/task-time-sync))
 
 Roda uma vez por dia, agendado via GitHub Actions. Busca tarefas no Jira e
 apontamentos de hora no Clockify, grava os dois num arquivo Excel e num banco
@@ -14,7 +14,7 @@ ou atrasada. Também mantém a identidade dos funcionários (nome, e-mail no
 Jira, e-mail no Clockify) sincronizada a partir de uma aba editável do
 próprio Excel.
 
-**Dashboard** ([repositório](https://github.com/SEU-USUARIO/quimia-dashboard))
+**Dashboard** ([repositório](https://github.com/ndelecrodev/quimia-dashboard))
 
 Site estático que lê direto do mesmo banco Postgres que o pipeline escreve.
 Cada pessoa do time loga com o próprio e-mail e vê tarefas, horas e

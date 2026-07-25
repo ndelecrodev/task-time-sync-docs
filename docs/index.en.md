@@ -5,7 +5,7 @@ Clockify, and a dashboard the team uses to track the result.
 
 ## The two parts
 
-**Pipeline** ([repository](https://github.com/SEU-USUARIO/task-time-sync))
+**Pipeline** ([repository](https://github.com/ndelecrodev/task-time-sync))
 
 Runs once a day, scheduled via GitHub Actions. Fetches tasks from Jira and
 time entries from Clockify, writes both to an Excel file and to a Postgres
@@ -14,7 +14,7 @@ deadline or already late. It also keeps employee identity (name, Jira
 email, Clockify email) synced from an editable sheet in the Excel file
 itself.
 
-**Dashboard** ([repository](https://github.com/SEU-USUARIO/quimia-dashboard))
+**Dashboard** ([repository](https://github.com/ndelecrodev/quimia-dashboard))
 
 A static site that reads straight from the same Postgres database the
 pipeline writes to. Each team member logs in with their own email and sees
