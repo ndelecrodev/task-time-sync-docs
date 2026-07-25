@@ -914,6 +914,10 @@
 
 
 <h1 id="modelo-de-dados">Modelo de dados</h1>
+<blockquote>
+<p>Também publicado como site navegável em
+https://ndelecrodev.github.io/task-time-sync-docs/</p>
+</blockquote>
 <h2 id="modelos-python">Modelos Python</h2>
 <p>Definidos em <code>src/sop_pipeline/models/schemas.py</code>. São modelos Pydantic: uma
 issue do Jira que não satisfaça o contrato é descartada com um <code>warning</code>, em vez
@@ -923,13 +927,13 @@ de derrubar a execução inteira.</p>
 camada de mapeamento normaliza os dois para um nome canônico usado como chave de
 junção.</p>
 <p><strong>Fonte editável:</strong> a aba <code>DIM_FUNCIONARIO</code> da planilha é onde alguém corrige ou
-adiciona colaboradores manualmente. Antes de cada execução, <code>EmployeeSyncService</code>
+adiciona colaboradores manualmente. Antes de cada execução, <code>EmployeeDataSyncService</code>
 lê essa aba com <code>ExcelReader</code> e grava as linhas na tabela <code>funcionarios</code> do
 Postgres via <code>PostgresClient.upsert_employee</code>, casando por <code>jira_email</code> ou
 <code>clockify_email</code>.</p>
 <p><strong>Duplicatas:</strong> a primeira linha a usar um dado <code>jira_email</code> ou <code>clockify_email</code>
 é sincronizada normalmente; qualquer linha seguinte que repita um dos dois é
-tratada como duplicata (<code>EmployeeSyncService._split_duplicates</code>), recebe um
+tratada como duplicata (<code>EmployeeDataSyncService._split_duplicates</code>), recebe um
 motivo e é gravada na aba <code>DUPLICADOS_REMOVIDOS</code> em vez de ser sincronizada.</p>
 <p><strong>Uso em runtime:</strong> <code>Settings.load_employee_registry</code> lê a tabela <code>funcionarios</code>
 já sincronizada e monta um <code>EmployeeRegistry</code>, usado pelo <code>EtlService</code> para
@@ -937,7 +941,7 @@ normalizar <code>Task.assignee</code> (vindo do Jira) e <code>TimeEntry.employee
 Clockify) para o nome canônico.</p>
 <p><strong>Foto do colaborador:</strong> <code>funcionarios.photo_url</code> guarda a URL pública do
 Supabase Storage da foto do colaborador, ou <code>None</code> quando nenhuma foto foi
-enviada ainda. <code>EmployeeSyncService</code> propaga o valor lido de <code>DIM_FUNCIONARIO</code>
+enviada ainda. <code>EmployeeDataSyncService</code> propaga o valor lido de <code>DIM_FUNCIONARIO</code>
 a cada sincronização; é esse campo que o dashboard de indicadores (repositório
 separado) consome para exibir a foto de cada pessoa.</p>
 <p><strong>Colaboradores não mapeados:</strong> se um colaborador não é encontrado no registro,
@@ -1287,8 +1291,8 @@ gravação equivalente na aba correspondente do <code>.xlsx</code>.</p>
 </tr>
 <tr>
 <td><code>tarefas</code></td>
-<td>Uma linha por issue do Jira; <code>responsavel_id</code> é <code>NULL</code> quando o colaborador não foi mapeado.</td>
-<td><code>upsert_task</code></td>
+<td>Uma linha por issue do Jira; <code>responsavel_id</code> é <code>NULL</code> quando o colaborador não foi mapeado. <code>arquivada_em</code> guarda o timestamp em que a tarefa deixou de aparecer no <code>JIRA_JQL</code> (<code>NULL</code> enquanto ativa); a linha nunca é apagada.</td>
+<td><code>upsert_task</code> (arquivamento: <code>archive_missing_tasks</code>)</td>
 </tr>
 <tr>
 <td><code>detalhes_tarefa</code></td>
@@ -1309,6 +1313,16 @@ gravação equivalente na aba correspondente do <code>.xlsx</code>.</p>
 <td><code>tarefa_etiqueta</code></td>
 <td>Associação N:N entre <code>tarefas</code> e <code>etiquetas</code>.</td>
 <td><code>upsert_tag_and_link</code></td>
+</tr>
+<tr>
+<td><code>areas</code></td>
+<td>Áreas de atuação dos colaboradores, sincronizadas a partir de <code>DIM_FUNCIONARIO_AREA</code>.</td>
+<td><code>upsert_area_and_link</code></td>
+</tr>
+<tr>
+<td><code>funcionario_area</code></td>
+<td>Associação N:N entre <code>funcionarios</code> e <code>areas</code>, sincronizada a partir de <code>FATO_FUNCIONARIO_AREA</code>; chave composta <code>funcionario_id</code> + <code>area_id</code>, ambas FK.</td>
+<td><code>upsert_area_and_link</code></td>
 </tr>
 </tbody>
 </table>

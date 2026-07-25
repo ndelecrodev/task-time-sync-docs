@@ -758,18 +758,30 @@
 
 
 <h1 id="arquitetura">Arquitetura</h1>
+<blockquote>
+<p>Também publicado como site navegável em
+https://ndelecrodev.github.io/task-time-sync-docs/</p>
+</blockquote>
 <h2 id="fluxo-de-uma-execucao">Fluxo de uma execução</h2>
 <p>Uma execução (<code>sop_pipeline.pipeline.run</code>) é uma sequência linear com três etapas
 de sincronização isoladas entre si.</p>
 <pre><code> 1. StorageClient.download_file
     B2 ──────────────────────────────▶ planilha_temp.xlsx (disco local)
 
- 2. EmployeeSyncService.sync
+ 2. EmployeeDataSyncService.sync + .sync_areas
     ExcelReader.read_employees        ── aba DIM_FUNCIONARIO
         │  list[dict]
         ▼
     PostgresClient.upsert_employee  ─▶ tabela funcionarios (Postgres/Supabase)
     ExcelWriter.save_duplicates     ─▶ aba DUPLICADOS_REMOVIDOS (linhas com e-mail repetido)
+
+    name_to_id = {canonical_name: id}, montado a partir de funcionarios (Postgres)
+
+    ExcelReader.read_dim_employee_area   ── aba DIM_FUNCIONARIO_AREA
+    ExcelReader.read_fato_employee_area  ── aba FATO_FUNCIONARIO_AREA
+        │  list[dict]
+        ▼
+    PostgresClient.upsert_area_and_link ─▶ tabelas areas, funcionario_area (Postgres/Supabase)
 
  3. sync_jira
     JiraClient.fetch_tasks(JIRA_JQL)          ── paginação por nextPageToken
@@ -784,6 +796,8 @@ de sincronização isoladas entre si.</p>
     ExcelWriter.save_details  ─▶ aba DETALHES_TAREFA
     PostgresClient.upsert_task / upsert_task_detail / upsert_tag_and_link
                                ─▶ tabelas tarefas, detalhes_tarefa, etiquetas, tarefa_etiqueta
+    PostgresClient.archive_missing_tasks
+                               ─▶ marca tarefas.arquivada_em nas tarefas que sumiram do JIRA_JQL (nunca apaga)
 
  4. sync_clockify
     ClockifyClient.list_users
@@ -812,6 +826,15 @@ de sincronização isoladas entre si.</p>
 </code></pre>
 <p>O Postgres roda em paralelo à planilha, não no lugar dela: as etapas 3 e 4
 gravam as mesmas informações nos dois destinos, um upsert por linha em cada.</p>
+<p><code>ExcelReader.read_employees</code>, <code>read_dim_employee_area</code> e <code>read_fato_employee_area</code>
+são wrappers finos sobre um único método genérico, <code>read_sheet_as_dicts(file_path,
+sheet_name, table_name)</code>, que concentra a lógica de abrir o workbook, achar a
+tabela e montar a lista de dicts por linha. Cada wrapper só fixa o nome da aba e
+da tabela que lê.</p>
+<p>Tarefas que somem do resultado do <code>JIRA_JQL</code> (fechadas fora do escopo, movidas,
+apagadas) não são removidas do Postgres: <code>PostgresClient.archive_missing_tasks</code>
+marca <code>tarefas.arquivada_em</code> com o timestamp da execução atual em toda linha cujo
+<code>task_id</code> não veio na busca, mantendo o histórico completo em vez de apagar.</p>
 <h2 id="camadas">Camadas</h2>
 <table>
 <thead>
@@ -829,8 +852,8 @@ gravam as mesmas informações nos dois destinos, um upsert por linha em cada.</
 </tr>
 <tr>
 <td><strong>Services</strong></td>
-<td><code>services/etl_service.py</code>, <code>services/alert_service.py</code>, <code>services/employee_sync_service.py</code></td>
-<td>Regra de negócio. <code>EtlService</code> e <code>AlertService</code> não fazem I/O de rede nem de arquivo; <code>EmployeeSyncService</code> é a exceção deliberada, já que orquestra <code>ExcelReader</code> e <code>PostgresClient</code> para sincronizar <code>DIM_FUNCIONARIO</code>.</td>
+<td><code>services/etl_service.py</code>, <code>services/alert_service.py</code>, <code>services/employee_data_sync_service.py</code></td>
+<td>Regra de negócio. <code>EtlService</code> e <code>AlertService</code> não fazem I/O de rede nem de arquivo; <code>EmployeeDataSyncService</code> (renomeada de <code>EmployeeSyncService</code>) é a exceção deliberada, já que orquestra <code>ExcelReader</code> e <code>PostgresClient</code> para sincronizar identidade (<code>DIM_FUNCIONARIO</code>) e vínculos de área (<code>DIM_FUNCIONARIO_AREA</code> + <code>FATO_FUNCIONARIO_AREA</code>) com o Postgres.</td>
 </tr>
 <tr>
 <td><strong>Integrations</strong></td>

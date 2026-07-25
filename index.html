@@ -710,14 +710,14 @@
 <p>Este site documenta o sistema completo: um pipeline que sincroniza Jira e
 Clockify, e um dashboard que o time usa para acompanhar o resultado.</p>
 <h2 id="as-duas-partes">As duas partes</h2>
-<p><strong>Pipeline</strong> (<a href="https://github.com/SEU-USUARIO/task-time-sync">repositório</a>)</p>
+<p><strong>Pipeline</strong> (<a href="https://github.com/ndelecrodev/task-time-sync">repositório</a>)</p>
 <p>Roda uma vez por dia, agendado via GitHub Actions. Busca tarefas no Jira e
 apontamentos de hora no Clockify, grava os dois num arquivo Excel e num banco
 Postgres (Supabase), e avisa no Teams quando uma tarefa está perto do prazo
 ou atrasada. Também mantém a identidade dos funcionários (nome, e-mail no
 Jira, e-mail no Clockify) sincronizada a partir de uma aba editável do
 próprio Excel.</p>
-<p><strong>Dashboard</strong> (<a href="https://github.com/SEU-USUARIO/quimia-dashboard">repositório</a>)</p>
+<p><strong>Dashboard</strong> (<a href="https://github.com/ndelecrodev/quimia-dashboard">repositório</a>)</p>
 <p>Site estático que lê direto do mesmo banco Postgres que o pipeline escreve.
 Cada pessoa do time loga com o próprio e-mail e vê tarefas, horas e
 indicadores de produtividade, tanto os próprios quanto os do time inteiro.</p>

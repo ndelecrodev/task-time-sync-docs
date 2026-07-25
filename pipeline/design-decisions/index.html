@@ -668,6 +668,39 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#16-employeesyncservice-virou-employeedatasyncservice-com-um-read_sheet_as_dicts-generico-em-vez-de-tres-leituras-quase-iguais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        16. EmployeeSyncService virou EmployeeDataSyncService, com um read_sheet_as_dicts genérico em vez de três leituras quase iguais
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#17-vinculo-colaborador-area-usa-duas-tabelas-no-postgres-areas-funcionario_area-nao-uma-coluna-de-texto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17. Vínculo colaborador-área usa duas tabelas no Postgres (areas + funcionario_area), não uma coluna de texto
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#18-tarefas-que-somem-do-jira_jql-sao-arquivadas-por-timestamp-nao-apagadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        18. Tarefas que somem do JIRA_JQL são arquivadas por timestamp, não apagadas
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -960,6 +993,39 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#16-employeesyncservice-virou-employeedatasyncservice-com-um-read_sheet_as_dicts-generico-em-vez-de-tres-leituras-quase-iguais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        16. EmployeeSyncService virou EmployeeDataSyncService, com um read_sheet_as_dicts genérico em vez de três leituras quase iguais
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#17-vinculo-colaborador-area-usa-duas-tabelas-no-postgres-areas-funcionario_area-nao-uma-coluna-de-texto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17. Vínculo colaborador-área usa duas tabelas no Postgres (areas + funcionario_area), não uma coluna de texto
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#18-tarefas-que-somem-do-jira_jql-sao-arquivadas-por-timestamp-nao-apagadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        18. Tarefas que somem do JIRA_JQL são arquivadas por timestamp, não apagadas
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -978,6 +1044,10 @@
 
 
 <h1 id="decisoes-de-design">Decisões de design</h1>
+<blockquote>
+<p>Também publicado como site navegável em
+https://ndelecrodev.github.io/task-time-sync-docs/</p>
+</blockquote>
 <p>Registro das escolhas não óbvias do projeto e do porquê delas.</p>
 <h2 id="1-o-upsert-e-feito-por-id-varrendo-a-primeira-coluna">1. O upsert é feito por ID, varrendo a primeira coluna</h2>
 <p><code>ExcelWriter._find_row</code> percorre a coluna 1 da tabela procurando o ID. Se achar,
@@ -1112,7 +1182,7 @@ Excel. Não há sincronização automática entre as duas.</p>
 <p>Antes, o mapeamento de colaboradores vivia em uma variável de ambiente
 (<code>EMPLOYEES_JSON</code>), um blob JSON lido na inicialização de <code>Settings</code>. Hoje
 <code>Settings.load_employee_registry</code> lê a tabela <code>funcionarios</code> do Postgres, e
-<code>EmployeeSyncService</code> é quem mantém essa tabela, sincronizando-a a partir da
+<code>EmployeeDataSyncService</code> é quem mantém essa tabela, sincronizando-a a partir da
 aba <code>DIM_FUNCIONARIO</code> da planilha antes de cada execução.</p>
 <p><strong>Por quê:</strong> um blob JSON em variável de ambiente só podia ser editado por
 quem tinha acesso ao <code>.env</code> e sabia a sintaxe correta; um erro de digitação
@@ -1157,6 +1227,12 @@ trabalha majoritariamente em tarefas de uma área também pertence a ela.</p>
 cadastrada explicitamente. Se essa lacuna passar a importar, o caminho é
 adicionar uma tabela <code>funcionario_area</code> no Postgres espelhando
 <code>FATO_FUNCIONARIO_AREA</code>.</p>
+<p><strong>Atualização:</strong> a tabela <code>funcionario_area</code> foi criada no Postgres (ver
+decisão 17), mas para sincronizar <code>FATO_FUNCIONARIO_AREA</code> via
+<code>EmployeeDataSyncService.sync_areas</code>, não para alimentar o <code>person.area</code> do
+dashboard descrito acima. A lacuna do trade-off ("colaborador sem tarefa não
+tem área derivável") segue existindo enquanto o dashboard não passar a
+consultar essa tabela.</p>
 <h2 id="15-o-alerta-mostra-tarefa-atrasada-ha-n-dias-em-vez-do-numero-negativo-de-days_remaining">15. O alerta mostra "Tarefa atrasada há N dia(s)" em vez do número negativo de <code>days_remaining</code></h2>
 <p><code>Task.days_remaining</code> é negativo por design para tarefas vencidas (decisão
 2). <code>Notifier._build_message</code>, porém, nunca expõe esse negativo no texto:
@@ -1170,6 +1246,46 @@ rapidamente dentro de uma notificação do Teams.</p>
 rótulo precisam andar juntas. Mudar uma sem a outra produz uma mensagem como
 "Dias restantes: -3 dia(s)" ou "Tarefa atrasada há -3 dia(s)", ambas
 incoerentes com o resto do texto.</p>
+<h2 id="16-employeesyncservice-virou-employeedatasyncservice-com-um-read_sheet_as_dicts-generico-em-vez-de-tres-leituras-quase-iguais">16. <code>EmployeeSyncService</code> virou <code>EmployeeDataSyncService</code>, com um <code>read_sheet_as_dicts</code> genérico em vez de três leituras quase iguais</h2>
+<p>A sincronização de colaboradores ganhou uma segunda responsabilidade: além de
+<code>DIM_FUNCIONARIO</code>, <code>EmployeeDataSyncService.sync_areas</code> agora lê também
+<code>DIM_FUNCIONARIO_AREA</code> e <code>FATO_FUNCIONARIO_AREA</code>. Para isso, <code>ExcelReader</code>
+ganhou um método genérico, <code>read_sheet_as_dicts(file_path, sheet_name,
+table_name)</code>, que abre o workbook, acha a tabela e monta a lista de dicts por
+linha. <code>read_employees</code>, <code>read_dim_employee_area</code> e <code>read_fato_employee_area</code>
+chamam esse helper, cada um só fixando o nome da aba e da tabela que lê.</p>
+<p><strong>Por quê:</strong> as três leituras faziam a mesma sequência de passos (abrir
+workbook, achar tabela, mapear colunas, iterar linhas), variando só a aba e a
+tabela. Manter três cópias dessa lógica criaria três lugares para corrigir o
+mesmo bug se o formato de leitura mudasse. O nome do serviço também mudou de
+<code>EmployeeSyncService</code> para <code>EmployeeDataSyncService</code> porque a classe deixou de
+sincronizar só identidade; manter o nome antigo passaria a ser enganoso.</p>
+<p><strong>Trade-off:</strong> nenhum digno de nota. <code>read_sheet_as_dicts</code> cobre exatamente o
+mesmo contrato que <code>read_employees</code> já tinha antes da extração; é uma
+reorganização de método, não uma mudança de comportamento.</p>
+<h2 id="17-vinculo-colaborador-area-usa-duas-tabelas-no-postgres-areas-funcionario_area-nao-uma-coluna-de-texto">17. Vínculo colaborador-área usa duas tabelas no Postgres (<code>areas</code> + <code>funcionario_area</code>), não uma coluna de texto</h2>
+<p><code>upsert_area_and_link</code> resolve ou cria uma linha em <code>Area</code> (tabela <code>areas</code>) e
+depois resolve ou cria a linha de associação em <code>FuncionarioArea</code> (tabela
+<code>funcionario_area</code>, chave composta <code>funcionario_id</code> + <code>area_id</code>), em vez de
+gravar o nome da área direto numa coluna de <code>Funcionarios</code>.</p>
+<p><strong>Por quê:</strong> mesmo raciocínio da decisão 4 para <code>etiquetas</code>/<code>tarefa_etiqueta</code>:
+um colaborador pode atuar em mais de uma área, então a relação é N:N, não N:1.
+Uma coluna de texto em <code>funcionarios</code> só comportaria uma área por colaborador
+e exigiria duplicar o nome da área em cada linha, sem uma dimensão para
+agrupar por área depois.</p>
+<h2 id="18-tarefas-que-somem-do-jira_jql-sao-arquivadas-por-timestamp-nao-apagadas">18. Tarefas que somem do <code>JIRA_JQL</code> são arquivadas por timestamp, não apagadas</h2>
+<p><code>PostgresClient.archive_missing_tasks</code> roda ao fim de <code>sync_jira</code> e marca
+<code>tarefas.arquivada_em = now()</code> em toda linha cujo <code>task_id</code> não apareceu na
+busca da execução atual e que ainda não tinha sido arquivada; a linha nunca é
+apagada.</p>
+<p><strong>Por quê:</strong> segue a mesma filosofia da decisão 8, nunca descartar
+silenciosamente. Uma falha transitória do Jira ou uma <code>JIRA_JQL</code> mal
+configurada pode fazer a lista de issues devolvida vir vazia ou incompleta;
+sem o arquivamento por timestamp, um <code>DELETE</code> nesse momento apagaria tarefas
+que continuam existindo no Jira, e o próximo <code>sync_jira</code> bem-sucedido não
+teria como recuperar o que foi perdido. Marcar com timestamp em vez de
+apagar deixa o problema visível e reversível.</p>
+<p><strong>Trade-off:</strong> Cuidado ao mexer nisso: o conjunto usado para decidir o que arquivar precisa ser all_ids_from_jira (toda issue key devolvida pela busca crua ao Jira, antes de qualquer validação), não valid_ids (as tarefas que já passaram pela validação do Pydantic, decisão 8). Usar valid_ids faria uma issue descartada por validação (priority/tipo fora do enum, por exemplo) ser arquivada como se tivesse desaparecido do Jira, mesmo continuando ativa lá — confundindo "não veio nessa busca" com "veio, mas falhou na validação". Essa foi, de fato, uma versão inicial com esse bug, corrigida antes de entrar em produção.</p>
 
 
 
