@@ -703,6 +703,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#19-o-arquivamento-tambem-e-marcado-na-planilha-numa-coluna-que-so-recebe-essa-escrita" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        19. O arquivamento também é marcado na planilha, numa coluna que só recebe essa escrita
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1028,6 +1039,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#19-o-arquivamento-tambem-e-marcado-na-planilha-numa-coluna-que-so-recebe-essa-escrita" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        19. O arquivamento também é marcado na planilha, numa coluna que só recebe essa escrita
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1287,7 +1309,27 @@ sem o arquivamento por timestamp, um <code>DELETE</code> nesse momento apagaria 
 que continuam existindo no Jira, e o próximo <code>sync_jira</code> bem-sucedido não
 teria como recuperar o que foi perdido. Marcar com timestamp em vez de
 apagar deixa o problema visível e reversível.</p>
-<p><strong>Trade-off:</strong> Cuidado ao mexer nisso: o conjunto usado para decidir o que arquivar precisa ser all_ids_from_jira (toda issue key devolvida pela busca crua ao Jira, antes de qualquer validação), não valid_ids (as tarefas que já passaram pela validação do Pydantic, decisão 8). Usar valid_ids faria uma issue descartada por validação (priority/tipo fora do enum, por exemplo) ser arquivada como se tivesse desaparecido do Jira, mesmo continuando ativa lá — confundindo "não veio nessa busca" com "veio, mas falhou na validação". Essa foi, de fato, uma versão inicial com esse bug, corrigida antes de entrar em produção.</p>
+<p><strong>Cuidado ao mexer nisso:</strong> o conjunto usado para decidir o que arquivar precisa ser all_ids_from_jira (toda issue key devolvida pela busca crua ao Jira, antes de qualquer validação), não valid_ids (as tarefas que já passaram pela validação do Pydantic, decisão 8). Usar valid_ids faria uma issue descartada por validação (priority/tipo fora do enum, por exemplo) ser arquivada como se tivesse desaparecido do Jira, mesmo continuando ativa lá — confundindo "não veio nessa busca" com "veio, mas falhou na validação". Essa foi, de fato, uma versão inicial com esse bug, corrigida antes de entrar em produção.</p>
+<h2 id="19-o-arquivamento-tambem-e-marcado-na-planilha-numa-coluna-que-so-recebe-essa-escrita">19. O arquivamento também é marcado na planilha, numa coluna que só recebe essa escrita</h2>
+<p><code>BASE_TAREFAS</code> ganhou a coluna <code>arquivada_em</code>, espelhando a coluna de mesmo
+nome em <code>tarefas</code> (decisão 18). <code>ExcelWriter.mark_archived_tasks</code> roda ao
+fim de <code>sync_jira</code>, depois de <code>archive_missing_tasks</code>, e busca as tarefas já
+arquivadas com <code>PostgresClient.get_archived_tasks</code> para escrever a data de
+arquivamento na planilha.</p>
+<p><strong>Por quê:</strong> antes dessa mudança, uma tarefa arquivada ficava marcada só no
+Postgres; quem abrisse a planilha não tinha como saber que uma linha de
+<code>BASE_TAREFAS</code> correspondia a uma tarefa que já sumiu do Jira, a não ser
+consultando o banco diretamente. Escrever a mesma marca na planilha deixa
+essa informação visível para quem só usa o Excel.</p>
+<p><strong>Trade-off:</strong> <code>mark_archived_tasks</code> escreve exclusivamente a célula de
+<code>arquivada_em</code>; não chama <code>_write_task_row</code> nem qualquer outro caminho que
+regrave <code>titulo</code>, <code>status</code>, <code>prazo</code> ou qualquer outro campo da linha. Isso é
+proposital: uma tarefa arquivada não recebe mais atualizações do Jira, então
+seus outros campos devem continuar congelados no último valor real que
+tinham antes de a tarefa desaparecer da busca, não serem sobrescritos ou
+zerados. Se um <code>task_id</code> vindo do Postgres não tiver linha correspondente em
+<code>BASE_TAREFAS</code> (não deveria acontecer, já que a tarefa foi escrita lá antes
+de ser arquivada), o método pula essa tarefa em vez de lançar erro.</p>
 
 
 

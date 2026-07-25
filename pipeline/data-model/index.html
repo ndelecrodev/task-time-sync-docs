@@ -1169,7 +1169,7 @@ minúsculas, primeira coluna sempre é o ID usado no upsert.</p>
 <tr>
 <td><code>BASE_TAREFAS</code></td>
 <td><code>base_tarefas</code></td>
-<td>id, titulo, responsavel, area, prioridade, status, data_criacao, prazo, data_conclusao, <strong>dias_restantes</strong>, <strong>atrasado</strong>, <strong>status_prazo</strong>, tipo, criador, data_atualizacao</td>
+<td>id, titulo, responsavel, area, prioridade, status, data_criacao, prazo, data_conclusao, <strong>dias_restantes</strong>, <strong>atrasado</strong>, <strong>status_prazo</strong>, tipo, criador, data_atualizacao, arquivada_em</td>
 <td><code>save_tasks</code></td>
 </tr>
 <tr>
@@ -1199,7 +1199,11 @@ minúsculas, primeira coluna sempre é o ID usado no upsert.</p>
 </tbody>
 </table>
 <p>As três colunas em <strong>negrito</strong> são calculadas por fórmula do Excel; o Python
-apenas replica o texto da fórmula quando cria uma linha nova.</p>
+apenas replica o texto da fórmula quando cria uma linha nova. <code>arquivada_em</code>
+também foge à regra: quem escreve nela é <code>ExcelWriter.mark_archived_tasks</code>, não
+<code>save_tasks</code>, e é a única coluna ainda tocada numa linha depois que a tarefa
+some do Jira — todo o resto da linha arquivada fica congelado no último valor
+conhecido, por design (ver decisão de design #19).</p>
 <p><code>Task</code> → <code>BASE_TAREFAS</code> é definido pelo dict <code>TASK_COLUMN_MAP</code> em
 <code>integrations/excel_writer.py</code>. O lado esquerdo é o cabeçalho literal da coluna na
 planilha (em português, por isso não é traduzido); o lado direito é o nome do
