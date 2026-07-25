@@ -1,0 +1,1377 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação do pipeline de sincronização e do dashboard do time.">
+      
+      
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../design-decisions/">
+      
+      
+        
+          <link rel="alternate" href="./" hreflang="pt">
+        
+          <link rel="alternate" href="../../en/pipeline/data-model/" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="../../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Modelo de dados - Task Time Sync — Documentação</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#modelo-de-dados" class="md-skip">
+          Ir para o conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="Task Time Sync — Documentação" class="md-header__button md-logo" aria-label="Task Time Sync — Documentação" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Task Time Sync — Documentação
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Modelo de dados
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Selecione o idioma">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="pt" class="md-select__link">
+              Português
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../../en/pipeline/data-model/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando a pesquisa
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Pipeline
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dashboard/overview/" class="md-tabs__link">
+          
+  
+  
+  Dashboard
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Task Time Sync — Documentação" class="md-nav__button md-logo" aria-label="Task Time Sync — Documentação" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    Task Time Sync — Documentação
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Pipeline
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modelo de dados
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modelo de dados
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#modelos-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modelos Python
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Modelos Python">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identidade-de-colaboradores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identidade de colaboradores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TimeEntry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#taskdetail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TaskDetail
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enums" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enums
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mapeamento-para-a-planilha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapeamento para a planilha
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mapeamento para a planilha">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#abas-escritas-pelo-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Abas escritas pelo Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#abas-que-o-python-nao-escreve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Abas que o Python não escreve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relações
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#esquema-no-postgres" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esquema no Postgres
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões de design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dashboard
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dashboard/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão geral
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#modelos-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modelos Python
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Modelos Python">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identidade-de-colaboradores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identidade de colaboradores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeentry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TimeEntry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#taskdetail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TaskDetail
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enums" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enums
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mapeamento-para-a-planilha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapeamento para a planilha
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mapeamento para a planilha">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#abas-escritas-pelo-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Abas escritas pelo Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#abas-que-o-python-nao-escreve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Abas que o Python não escreve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relações
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#esquema-no-postgres" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esquema no Postgres
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="modelo-de-dados">Modelo de dados</h1>
+<h2 id="modelos-python">Modelos Python</h2>
+<p>Definidos em <code>src/sop_pipeline/models/schemas.py</code>. São modelos Pydantic: uma
+issue do Jira que não satisfaça o contrato é descartada com um <code>warning</code>, em vez
+de derrubar a execução inteira.</p>
+<h3 id="identidade-de-colaboradores">Identidade de colaboradores</h3>
+<p>Como o Jira identifica pessoas pelo nome de exibição e o Clockify por e-mail, uma
+camada de mapeamento normaliza os dois para um nome canônico usado como chave de
+junção.</p>
+<p><strong>Fonte editável:</strong> a aba <code>DIM_FUNCIONARIO</code> da planilha é onde alguém corrige ou
+adiciona colaboradores manualmente. Antes de cada execução, <code>EmployeeSyncService</code>
+lê essa aba com <code>ExcelReader</code> e grava as linhas na tabela <code>funcionarios</code> do
+Postgres via <code>PostgresClient.upsert_employee</code>, casando por <code>jira_email</code> ou
+<code>clockify_email</code>.</p>
+<p><strong>Duplicatas:</strong> a primeira linha a usar um dado <code>jira_email</code> ou <code>clockify_email</code>
+é sincronizada normalmente; qualquer linha seguinte que repita um dos dois é
+tratada como duplicata (<code>EmployeeSyncService._split_duplicates</code>), recebe um
+motivo e é gravada na aba <code>DUPLICADOS_REMOVIDOS</code> em vez de ser sincronizada.</p>
+<p><strong>Uso em runtime:</strong> <code>Settings.load_employee_registry</code> lê a tabela <code>funcionarios</code>
+já sincronizada e monta um <code>EmployeeRegistry</code>, usado pelo <code>EtlService</code> para
+normalizar <code>Task.assignee</code> (vindo do Jira) e <code>TimeEntry.employee</code> (vindo do
+Clockify) para o nome canônico.</p>
+<p><strong>Foto do colaborador:</strong> <code>funcionarios.photo_url</code> guarda a URL pública do
+Supabase Storage da foto do colaborador, ou <code>None</code> quando nenhuma foto foi
+enviada ainda. <code>EmployeeSyncService</code> propaga o valor lido de <code>DIM_FUNCIONARIO</code>
+a cada sincronização; é esse campo que o dashboard de indicadores (repositório
+separado) consome para exibir a foto de cada pessoa.</p>
+<p><strong>Colaboradores não mapeados:</strong> se um colaborador não é encontrado no registro,
+ele recebe um valor sentinela visível (<code>"Unmapped employee: &lt;email&gt;"</code>) em vez de
+ser descartado silenciosamente. Segue a decisão de design #8: um registro ruim
+não derruba a execução inteira, e problemas de qualidade de dados ficam visíveis
+no relatório em vez de escondidos.</p>
+<h3 id="task"><code>Task</code></h3>
+<p>Uma issue do Jira normalizada. Chave de upsert: <code>task_id</code> (a <em>key</em> do Jira).</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Tipo</th>
+<th>Origem no Jira</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>task_id</code></td>
+<td><code>str</code></td>
+<td><code>key</code></td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td><code>str</code></td>
+<td><code>fields.summary</code> (default <code>"No title"</code>)</td>
+</tr>
+<tr>
+<td><code>assignee</code></td>
+<td><code>str</code></td>
+<td><code>fields.assignee.displayName</code></td>
+</tr>
+<tr>
+<td><code>priority</code></td>
+<td><code>Priority</code></td>
+<td><code>fields.priority.name</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>str</code></td>
+<td><code>fields.status.name</code></td>
+</tr>
+<tr>
+<td><code>area</code></td>
+<td><code>str \| None</code></td>
+<td>custom field configurado em <code>JIRA_CUSTOMFIELD_AREA</code></td>
+</tr>
+<tr>
+<td><code>creation_date</code></td>
+<td><code>date</code></td>
+<td><code>fields.created</code></td>
+</tr>
+<tr>
+<td><code>due_date</code></td>
+<td><code>date \| None</code></td>
+<td><code>fields.duedate</code></td>
+</tr>
+<tr>
+<td><code>completion_date</code></td>
+<td><code>date \| None</code></td>
+<td><code>fields.resolutiondate</code></td>
+</tr>
+<tr>
+<td><code>task_type</code></td>
+<td><code>TaskType</code></td>
+<td><code>fields.issuetype.name</code></td>
+</tr>
+<tr>
+<td><code>creator</code></td>
+<td><code>str \| None</code></td>
+<td><code>fields.creator.displayName</code></td>
+</tr>
+<tr>
+<td><code>update_date</code></td>
+<td><code>date \| None</code></td>
+<td><code>fields.updated</code></td>
+</tr>
+<tr>
+<td><code>assignee_email</code></td>
+<td><code>EmailStr \| None</code></td>
+<td><code>fields.assignee.emailAddress</code></td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td><code>list[str]</code></td>
+<td><code>fields.labels</code></td>
+</tr>
+</tbody>
+</table>
+<p>Campos calculados (<code>@computed_field</code>), usados pela regra de alerta e pelo texto da
+notificação — <strong>não</strong> são gravados na planilha, que tem as próprias fórmulas:</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Retorno</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>days_remaining</code></td>
+<td>Dias até o prazo; negativo se já venceu; <code>None</code> sem prazo.</td>
+</tr>
+<tr>
+<td><code>is_late</code></td>
+<td><code>"SIM"</code> / <code>"NÃO"</code> / <code>None</code>.</td>
+</tr>
+<tr>
+<td><code>deadline_status</code></td>
+<td>Um valor de <code>DeadlineStatus</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><code>Notifier._build_message</code> nunca mostra <code>days_remaining</code> negativo diretamente:
+para uma tarefa vencida, a linha da notificação vira "Tarefa atrasada há N
+dia(s)" (com N positivo); para uma tarefa no prazo, "Dias restantes: N
+dia(s)"; sem prazo definido, "Dias restantes: Indefinido".</p>
+<p>Quando o Jira não traz responsável ou área, o ETL usa os textos
+<code>"There is no one responsible."</code> e <code>"There is no one area."</code> em vez de descartar a
+linha — a tarefa continua aparecendo no relatório.</p>
+<h3 id="timeentry"><code>TimeEntry</code></h3>
+<p>Um apontamento de horas do Clockify. Chave de upsert: <code>entry_id</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Tipo</th>
+<th>Origem no Clockify</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>entry_id</code></td>
+<td><code>str</code></td>
+<td><code>id</code></td>
+</tr>
+<tr>
+<td><code>employee</code></td>
+<td><code>str</code></td>
+<td>e-mail resolvido a partir de <code>userId</code></td>
+</tr>
+<tr>
+<td><code>entry_date</code></td>
+<td><code>date</code></td>
+<td><code>timeInterval.start</code>, convertido de UTC para America/Sao_Paulo</td>
+</tr>
+<tr>
+<td><code>hours</code></td>
+<td><code>float</code> (≥ 0)</td>
+<td><code>timeInterval.duration</code> (ISO 8601) convertido em horas</td>
+</tr>
+</tbody>
+</table>
+<p>Entradas com <code>duration</code> nulo (timer ainda rodando) são ignoradas e recolhidas em
+uma execução posterior.</p>
+<h3 id="taskdetail"><code>TaskDetail</code></h3>
+<p>A descrição longa de uma tarefa, separada porque é um texto grande e fica em aba
+própria. Chave de upsert: <code>task_id</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Tipo</th>
+<th>Origem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>task_id</code></td>
+<td><code>str</code></td>
+<td><code>key</code></td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>str \| None</code></td>
+<td><code>fields.description</code>, achatado do formato ADF para texto puro</td>
+</tr>
+</tbody>
+</table>
+<h3 id="enums">Enums</h3>
+<table>
+<thead>
+<tr>
+<th>Enum</th>
+<th>Valores</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Priority</code></td>
+<td><code>Highest</code>, <code>High</code>, <code>Medium</code>, <code>Low</code>, <code>Lowest</code></td>
+</tr>
+<tr>
+<td><code>TaskType</code></td>
+<td><code>Bug</code>, <code>Task</code>, <code>Story</code>, <code>Epic</code>, <code>Subtask</code></td>
+</tr>
+<tr>
+<td><code>DeadlineStatus</code></td>
+<td><code>Concluído</code>, <code>Atrasado</code>, <code>Atenção</code>, <code>No prazo</code>, <code>Sem prazo</code></td>
+</tr>
+</tbody>
+</table>
+<p>Os valores de <code>Priority</code> e <code>TaskType</code> são exatamente as strings que a API do Jira
+devolve. Os de <code>DeadlineStatus</code> são exatamente as strings que a fórmula da coluna
+<code>status_prazo</code> produz no Excel. <strong>Nenhum desses valores pode ser traduzido</strong> — só
+os nomes dos membros do enum.</p>
+<hr />
+<h2 id="mapeamento-para-a-planilha">Mapeamento para a planilha</h2>
+<p>Convenções do arquivo <code>.xlsx</code>: nome de aba em MAIÚSCULAS, nome de tabela em
+minúsculas, primeira coluna sempre é o ID usado no upsert.</p>
+<h3 id="abas-escritas-pelo-python">Abas escritas pelo Python</h3>
+<table>
+<thead>
+<tr>
+<th>Aba</th>
+<th>Tabela</th>
+<th>Colunas</th>
+<th>Escrita por</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BASE_TAREFAS</code></td>
+<td><code>base_tarefas</code></td>
+<td>id, titulo, responsavel, area, prioridade, status, data_criacao, prazo, data_conclusao, <strong>dias_restantes</strong>, <strong>atrasado</strong>, <strong>status_prazo</strong>, tipo, criador, data_atualizacao</td>
+<td><code>save_tasks</code></td>
+</tr>
+<tr>
+<td><code>DETALHES_TAREFA</code></td>
+<td><code>detalhes_tarefa</code></td>
+<td>id, descricao</td>
+<td><code>save_details</code></td>
+</tr>
+<tr>
+<td><code>BASE_HORAS</code></td>
+<td><code>base_horas</code></td>
+<td>id, funcionario, data, horas</td>
+<td><code>save_hours</code></td>
+</tr>
+<tr>
+<td><code>DIM_ETIQUETAS</code></td>
+<td><code>dim_etiquetas</code></td>
+<td>id_etiqueta, nome_etiqueta</td>
+<td><code>save_tags</code></td>
+</tr>
+<tr>
+<td><code>FATO_TAREFA_ETIQUETA</code></td>
+<td><code>fato_tarefa_etiqueta</code></td>
+<td>id_tarefa, id_etiqueta</td>
+<td><code>save_tags</code></td>
+</tr>
+</tbody>
+</table>
+<p>As três colunas em <strong>negrito</strong> são calculadas por fórmula do Excel; o Python
+apenas replica o texto da fórmula quando cria uma linha nova.</p>
+<p><code>Task</code> → <code>BASE_TAREFAS</code> é definido pelo dict <code>TASK_COLUMN_MAP</code> em
+<code>integrations/excel_writer.py</code>. O lado esquerdo é o cabeçalho literal da coluna na
+planilha (em português, por isso não é traduzido); o lado direito é o nome do
+atributo no modelo:</p>
+<pre><code class="language-python">TASK_COLUMN_MAP = {
+    &quot;id&quot;: &quot;task_id&quot;,
+    &quot;titulo&quot;: &quot;title&quot;,
+    &quot;responsavel&quot;: &quot;assignee&quot;,
+    ...
+}
+</code></pre>
+<p><code>DETALHES_TAREFA</code> e <code>BASE_HORAS</code> têm layout fixo e curto, então são escritas por
+posição de coluna, sem passar pelo mapa de cabeçalhos.</p>
+<h3 id="abas-que-o-python-nao-escreve">Abas que o Python não escreve</h3>
+<p>Existem no arquivo e são mantidas manualmente ou por fórmula. <code>DIM_FUNCIONARIO</code>
+é a exceção parcial: ninguém escreve nela por código, mas <code>ExcelReader</code> a lê a
+cada execução para sincronizar o cadastro com o Postgres (ver "Identidade de
+colaboradores" acima).</p>
+<table>
+<thead>
+<tr>
+<th>Aba</th>
+<th>Tabela</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DIM_FUNCIONARIO</code></td>
+<td><code>dim_funcionario</code></td>
+<td>Cadastro de colaboradores (id_funcionario, nome, email), lido por <code>ExcelReader</code>.</td>
+</tr>
+<tr>
+<td><code>DIM_FUNCIONARIO_AREA</code></td>
+<td><code>dim_func_area</code></td>
+<td>Dimensão de áreas (id_area, nome_area).</td>
+</tr>
+<tr>
+<td><code>FATO_FUNCIONARIO_AREA</code></td>
+<td><code>fato_funcionario</code></td>
+<td>Relação N:N entre colaborador e área.</td>
+</tr>
+<tr>
+<td><code>CALCULOS</code></td>
+<td><code>Tabela6</code></td>
+<td>Métricas por pessoa (tarefas, concluídas, atrasadas, horas, produtividade).</td>
+</tr>
+<tr>
+<td><code>INDICADORES</code></td>
+<td><code>Tabela7</code>, <code>Tabela10</code>, <code>Tabela11</code>, <code>Tabela12</code></td>
+<td>KPIs consolidados do dashboard.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="relacoes">Relações</h3>
+<pre><code>BASE_TAREFAS (id)
+   │ 1:1
+   ├──────────▶ DETALHES_TAREFA (id)
+   │
+   │ 1:N
+   └──────────▶ FATO_TAREFA_ETIQUETA (id_tarefa) ──N:1──▶ DIM_ETIQUETAS (id_etiqueta)
+
+DIM_FUNCIONARIO (id_funcionario)
+   │ 1:N
+   └──────────▶ FATO_FUNCIONARIO_AREA (id_funcionario) ──N:1──▶ DIM_FUNCIONARIO_AREA (id_area)
+
+BASE_HORAS (funcionario) ──── liga-se a DIM_FUNCIONARIO por e-mail
+</code></pre>
+<h2 id="esquema-no-postgres">Esquema no Postgres</h2>
+<p>Definido em <code>src/sop_pipeline/clients/postgres_client.py</code> como modelos
+SQLAlchemy (ORM), não como SQL cru. O ORM também foi escolhido pelo objetivo
+de aprendizado do projeto; ver a decisão de design correspondente. Nomes de
+tabela e de coluna espelham o schema já implantado no Supabase e por isso
+permanecem em português; os métodos de upsert e o próprio <code>PostgresClient</code>
+estão em inglês. Este schema roda em paralelo à planilha, não no lugar dela:
+toda gravação do pipeline em <code>tarefas</code>, <code>horas</code>, <code>etiquetas</code> etc. tem uma
+gravação equivalente na aba correspondente do <code>.xlsx</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Tabela</th>
+<th>Papel</th>
+<th>Upsert por</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>funcionarios</code></td>
+<td>Identidade de colaboradores, sincronizada a partir de <code>DIM_FUNCIONARIO</code>. Inclui <code>photo_url</code>, a URL da foto usada pelo dashboard.</td>
+<td><code>upsert_employee</code></td>
+</tr>
+<tr>
+<td><code>tarefas</code></td>
+<td>Uma linha por issue do Jira; <code>responsavel_id</code> é <code>NULL</code> quando o colaborador não foi mapeado.</td>
+<td><code>upsert_task</code></td>
+</tr>
+<tr>
+<td><code>detalhes_tarefa</code></td>
+<td>Descrição longa de uma tarefa.</td>
+<td><code>upsert_task_detail</code></td>
+</tr>
+<tr>
+<td><code>horas</code></td>
+<td>Um apontamento de horas do Clockify; <code>funcionario_id</code> é <code>NULL</code> quando o colaborador não foi mapeado.</td>
+<td><code>upsert_time_entry</code></td>
+</tr>
+<tr>
+<td><code>etiquetas</code></td>
+<td>Tags distintas atribuídas a tarefas.</td>
+<td><code>upsert_tag_and_link</code></td>
+</tr>
+<tr>
+<td><code>tarefa_etiqueta</code></td>
+<td>Associação N:N entre <code>tarefas</code> e <code>etiquetas</code>.</td>
+<td><code>upsert_tag_and_link</code></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar ao topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.top", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "Mais 1 nesta p\u00e1gina", "search.result.more.other": "Mais # nesta p\u00e1gina", "search.result.none": "Nenhum resultado encontrado", "search.result.one": "1 resultado encontrado", "search.result.other": "# resultados encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

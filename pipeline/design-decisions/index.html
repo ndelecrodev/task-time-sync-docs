@@ -1,0 +1,1235 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação do pipeline de sincronização e do dashboard do time.">
+      
+      
+      
+      
+        <link rel="prev" href="../data-model/">
+      
+      
+        <link rel="next" href="../../dashboard/overview/">
+      
+      
+        
+          <link rel="alternate" href="./" hreflang="pt">
+        
+          <link rel="alternate" href="../../en/pipeline/design-decisions/" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="../../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Decisões de design - Task Time Sync — Documentação</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#decisoes-de-design" class="md-skip">
+          Ir para o conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="Task Time Sync — Documentação" class="md-header__button md-logo" aria-label="Task Time Sync — Documentação" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Task Time Sync — Documentação
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Decisões de design
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Selecione o idioma">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="pt" class="md-select__link">
+              Português
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../../en/pipeline/design-decisions/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando a pesquisa
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Pipeline
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dashboard/overview/" class="md-tabs__link">
+          
+  
+  
+  Dashboard
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Task Time Sync — Documentação" class="md-nav__button md-logo" aria-label="Task Time Sync — Documentação" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    Task Time Sync — Documentação
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Pipeline
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modelo de dados
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões de design
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões de design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-o-upsert-e-feito-por-id-varrendo-a-primeira-coluna" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. O upsert é feito por ID, varrendo a primeira coluna
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-as-colunas-calculadas-ficam-em-formula-do-excel-nao-em-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. As colunas calculadas ficam em fórmula do Excel, não em Python
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-copiar-o-texto-da-formula-funciona-por-causa-da-referencia-estruturada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Copiar o texto da fórmula funciona por causa da referência estruturada
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-etiquetas-usam-relacao-nn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Etiquetas usam relação N:N
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-fullcalconload-e-ligado-em-toda-abertura-do-workbook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. fullCalcOnLoad é ligado em toda abertura do workbook
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-os-identificadores-da-planilha-ficam-em-portugues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Os identificadores da planilha ficam em português
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-o-heartbeat-fica-fora-do-tratamento-de-erro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. O heartbeat fica fora do tratamento de erro
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-registros-invalidos-sao-descartados-nao-interrompem-a-execucao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Registros inválidos são descartados, não interrompem a execução
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-as-excecoes-customizadas-cobrem-so-as-bordas-de-io" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. As exceções customizadas cobrem só as bordas de I/O
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-os-pacotes-nao-reexportam-nada-nos-__init__py" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Os pacotes não reexportam nada nos __init__.py
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-a-validacao-de-status-no-excel-e-uma-copia-manual-do-workflow-do-jira" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. A validação de status no Excel é uma cópia manual do workflow do Jira
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-identidade-de-colaboradores-saiu-de-employees_json-para-uma-tabela-no-postgres-com-o-excel-como-front-end-editavel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Identidade de colaboradores saiu de EMPLOYEES_JSON para uma tabela no Postgres, com o Excel como front-end editável
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-sqlalchemy-foi-escolhido-como-orm-nao-core-ou-psycopg-cru" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. SQLAlchemy foi escolhido como ORM, não Core ou psycopg cru
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-personarea-no-dashboard-e-derivado-das-areas-das-tarefas-nao-de-uma-tabela-de-area-por-colaborador-no-postgres" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. person.area no dashboard é derivado das áreas das tarefas, não de uma tabela de área por colaborador no Postgres
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-o-alerta-mostra-tarefa-atrasada-ha-n-dias-em-vez-do-numero-negativo-de-days_remaining" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. O alerta mostra "Tarefa atrasada há N dia(s)" em vez do número negativo de days_remaining
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dashboard
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dashboard/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão geral
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-o-upsert-e-feito-por-id-varrendo-a-primeira-coluna" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. O upsert é feito por ID, varrendo a primeira coluna
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-as-colunas-calculadas-ficam-em-formula-do-excel-nao-em-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. As colunas calculadas ficam em fórmula do Excel, não em Python
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-copiar-o-texto-da-formula-funciona-por-causa-da-referencia-estruturada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Copiar o texto da fórmula funciona por causa da referência estruturada
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-etiquetas-usam-relacao-nn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Etiquetas usam relação N:N
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-fullcalconload-e-ligado-em-toda-abertura-do-workbook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. fullCalcOnLoad é ligado em toda abertura do workbook
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-os-identificadores-da-planilha-ficam-em-portugues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Os identificadores da planilha ficam em português
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-o-heartbeat-fica-fora-do-tratamento-de-erro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. O heartbeat fica fora do tratamento de erro
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-registros-invalidos-sao-descartados-nao-interrompem-a-execucao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Registros inválidos são descartados, não interrompem a execução
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-as-excecoes-customizadas-cobrem-so-as-bordas-de-io" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. As exceções customizadas cobrem só as bordas de I/O
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-os-pacotes-nao-reexportam-nada-nos-__init__py" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Os pacotes não reexportam nada nos __init__.py
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-a-validacao-de-status-no-excel-e-uma-copia-manual-do-workflow-do-jira" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. A validação de status no Excel é uma cópia manual do workflow do Jira
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-identidade-de-colaboradores-saiu-de-employees_json-para-uma-tabela-no-postgres-com-o-excel-como-front-end-editavel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Identidade de colaboradores saiu de EMPLOYEES_JSON para uma tabela no Postgres, com o Excel como front-end editável
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-sqlalchemy-foi-escolhido-como-orm-nao-core-ou-psycopg-cru" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. SQLAlchemy foi escolhido como ORM, não Core ou psycopg cru
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-personarea-no-dashboard-e-derivado-das-areas-das-tarefas-nao-de-uma-tabela-de-area-por-colaborador-no-postgres" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. person.area no dashboard é derivado das áreas das tarefas, não de uma tabela de área por colaborador no Postgres
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-o-alerta-mostra-tarefa-atrasada-ha-n-dias-em-vez-do-numero-negativo-de-days_remaining" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. O alerta mostra "Tarefa atrasada há N dia(s)" em vez do número negativo de days_remaining
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="decisoes-de-design">Decisões de design</h1>
+<p>Registro das escolhas não óbvias do projeto e do porquê delas.</p>
+<h2 id="1-o-upsert-e-feito-por-id-varrendo-a-primeira-coluna">1. O upsert é feito por ID, varrendo a primeira coluna</h2>
+<p><code>ExcelWriter._find_row</code> percorre a coluna 1 da tabela procurando o ID. Se achar,
+sobrescreve a linha; se não, acrescenta uma nova.</p>
+<p><strong>Por quê:</strong> torna a execução <strong>idempotente</strong>. O pipeline roda de forma agendada e
+o <code>JIRA_JQL</code> normalmente traz de novo issues que já estão na planilha. Sem o
+upsert, cada execução duplicaria linhas. Com ele, rodar duas vezes seguidas
+produz exatamente o mesmo arquivo.</p>
+<p><strong>Custo:</strong> a busca é linear (O(n) por registro, O(n²) na execução). Para a ordem
+de grandeza atual — algumas centenas de linhas — é irrelevante, e mantém o código
+sem estado auxiliar. Se a planilha crescer para milhares de linhas, o caminho é
+construir um índice <code>{id: linha}</code> uma vez por aba, antes do laço.</p>
+<h2 id="2-as-colunas-calculadas-ficam-em-formula-do-excel-nao-em-python">2. As colunas calculadas ficam em fórmula do Excel, não em Python</h2>
+<p><code>dias_restantes</code>, <code>atrasado</code> e <code>status_prazo</code> não estão no <code>TASK_COLUMN_MAP</code>. O
+Python nunca escreve valores nelas — só copia o texto da fórmula quando cria uma
+linha nova.</p>
+<p><strong>Por quê:</strong> a planilha é o produto final e é aberta por pessoas em dias em que o
+pipeline não rodou. Se esses campos fossem gravados como valores estáticos,
+"dias restantes" ficaria congelado na data da última execução e passaria a mentir.
+Como fórmula, o Excel recalcula sozinho toda vez que alguém abre o arquivo.</p>
+<p>O modelo <code>Task</code> <strong>também</strong> expõe <code>days_remaining</code> / <code>is_late</code> / <code>deadline_status</code>,
+mas apenas para a regra de alerta e para o texto da notificação, que precisam do
+valor no momento da execução.</p>
+<blockquote>
+<p>Divergência conhecida: a fórmula do Excel usa <code>MAX(prazo-TODAY(),0)</code>, então
+nunca mostra número negativo; o <code>Task.days_remaining</code> em Python devolve negativo
+para tarefas vencidas. Como o Python não escreve nessa coluna, as duas
+definições nunca se sobrepõem, mas é bom saber ao comparar os dois lados.</p>
+</blockquote>
+<h2 id="3-copiar-o-texto-da-formula-funciona-por-causa-da-referencia-estruturada">3. Copiar o texto da fórmula funciona por causa da referência estruturada</h2>
+<p><code>_copy_formula</code> copia a string da fórmula da linha 2 para a linha nova, sem
+reescrever nenhum índice.</p>
+<p><strong>Por quê:</strong> as fórmulas da planilha usam referência estruturada de tabela:</p>
+<pre><code>=IF(base_tarefas[[#This Row],[data_conclusao]]&lt;&gt;&quot;&quot;,&quot;Concluído&quot;, ...)
+</code></pre>
+<p><code>[#This Row]</code> resolve relativo à linha em que a fórmula está. O mesmo texto é,
+portanto, correto em qualquer linha — não existe deslocamento a corrigir, ao
+contrário do que aconteceria com referências no estilo <code>J2</code>, <code>J3</code>.</p>
+<h2 id="4-etiquetas-usam-relacao-nn">4. Etiquetas usam relação N:N</h2>
+<p>Uma etiqueta virou duas abas: <code>DIM_ETIQUETAS</code> (uma linha por etiqueta distinta,
+com ID surrogate) e <code>FATO_TAREFA_ETIQUETA</code> (uma linha por associação).</p>
+<p><strong>Por quê:</strong> a relação é genuinamente muitos-para-muitos — uma tarefa pode ter
+várias etiquetas e uma etiqueta é usada por várias tarefas. As alternativas eram
+piores:</p>
+<ul>
+<li>guardar as etiquetas concatenadas em uma célula (<code>"bug;urgente"</code>) impediria
+  contar tarefas por etiqueta ou montar tabela dinâmica;</li>
+<li>criar uma coluna por etiqueta exigiria alterar o schema da planilha toda vez que
+  o time inventasse uma etiqueta nova.</li>
+</ul>
+<p>Com a modelagem dimensional, uma tabela dinâmica por etiqueta sai de graça, e
+<code>_get_or_create_tag_id</code> cria a dimensão sob demanda.</p>
+<p>O mesmo raciocínio vale para <code>FATO_FUNCIONARIO_AREA</code>: uma pessoa pode atuar em
+mais de uma área.</p>
+<h2 id="5-fullcalconload-e-ligado-em-toda-abertura-do-workbook">5. <code>fullCalcOnLoad</code> é ligado em toda abertura do workbook</h2>
+<p><code>_open_workbook</code> sempre define <code>workbook.calculation.fullCalcOnLoad = True</code>.</p>
+<p><strong>Por quê:</strong> o openpyxl lê o <em>valor em cache</em> das fórmulas e o regrava ao salvar.
+Sem essa flag, uma linha nova recém-inserida ficaria exibindo cache vazio ou
+desatualizado até alguém editar a célula. Com a flag, o Excel recalcula o arquivo
+inteiro na próxima abertura.</p>
+<h2 id="6-os-identificadores-da-planilha-ficam-em-portugues">6. Os identificadores da planilha ficam em português</h2>
+<p>Nomes de aba (<code>BASE_TAREFAS</code>), nomes de tabela (<code>base_tarefas</code>), cabeçalhos de
+coluna (<code>data_criacao</code>) e os valores de <code>DeadlineStatus</code> (<code>"Concluído"</code>) seguem em
+português, mesmo com o código todo em inglês.</p>
+<p><strong>Por quê:</strong> não são nomes de código, são <strong>dados</strong>. São procurados em tempo de
+execução dentro do arquivo <code>.xlsx</code> (<code>workbook["BASE_TAREFAS"]</code>,
+<code>worksheet.tables["base_tarefas"]</code>, <code>column_map["data_criacao"]</code>) e comparados com
+o que as fórmulas do Excel produzem. Traduzi-los quebraria o pipeline em runtime,
+sem erro de importação para avisar.</p>
+<p>Por isso o <code>TASK_COLUMN_MAP</code> existe: ele é a fronteira explícita entre o mundo dos
+dados (esquerda, português) e o mundo do código (direita, inglês).</p>
+<h2 id="7-o-heartbeat-fica-fora-do-tratamento-de-erro">7. O heartbeat fica fora do tratamento de erro</h2>
+<p>Ver <a href="../architecture/#observabilidade"><code>architecture.md</code></a>: o heartbeat só deve
+disparar quando a planilha efetivamente chegou ao bucket. Ele é a última linha de
+<code>run()</code> e não está protegido por <code>try/except</code> justamente para que uma falha
+anterior o impeça de rodar.</p>
+<h2 id="8-registros-invalidos-sao-descartados-nao-interrompem-a-execucao">8. Registros inválidos são descartados, não interrompem a execução</h2>
+<p><code>transform_tasks</code>, <code>transform_details</code> e <code>transform_time_entries</code> capturam
+<code>ValidationError</code> e <code>KeyError</code> <strong>por registro</strong>, logam um <code>warning</code> e seguem.</p>
+<p><strong>Por quê:</strong> uma única issue com campo faltando não pode custar a sincronização
+inteira do dia. O warning fica no Better Stack para investigação posterior.</p>
+<p><strong>Trade-off:</strong> um erro sistemático (por exemplo, o <code>JIRA_CUSTOMFIELD_AREA</code>
+apontando para um campo que não existe mais) se manifestaria como "todas as
+tarefas foram puladas", com a execução terminando em sucesso aparente. Por isso o
+descarte é logado em <strong>ERROR</strong> e mandado pro Sentry, e o log de fim de sync traz a
+contagem: <code>"Jira: N issues fetched, M tasks written, K discarded"</code> — um <code>K</code> acima
+de zero é sinal de problema estrutural, tipicamente uma prioridade ou tipo novo no
+Jira que não existe nos enums de <code>models/schemas.py</code>.</p>
+<p><strong>Cuidado ao mexer nesse <code>except</code>:</strong> ele lista explicitamente <code>AttributeError</code> e
+<code>TypeError</code> (a tupla <code>RECORD_ERRORS</code>) além de <code>ValidationError</code>/<code>KeyError</code>. Sem
+eles, um campo <code>null</code> inesperado do Jira estoura <code>AttributeError</code>, escapa do laço e
+derruba o lote inteiro — o oposto do isolamento por registro que essa decisão
+promete. Foi exatamente esse o bug: <code>priority: null</code> numa única issue fazia todas
+as outras se perderem.</p>
+<h2 id="9-as-excecoes-customizadas-cobrem-so-as-bordas-de-io">9. As exceções customizadas cobrem só as bordas de I/O</h2>
+<p><code>errors/exceptions.py</code> define <code>ExcelWriteError</code>, <code>NotificationError</code> e
+<code>StorageError</code>, levantadas em <code>integrations/</code>. <code>TaskValidationError</code> está definida
+mas o ETL <strong>continua</strong> usando <code>except (ValidationError, KeyError): continue</code>.</p>
+<p><strong>Por quê:</strong> trocar o <code>continue</code> por um <code>raise</code> mudaria comportamento — passaria a
+abortar a transformação no primeiro registro ruim, que é justamente o oposto da
+decisão 8. As exceções entram só onde já havia propagação de erro genérica até o
+<code>try/except</code> do <code>run()</code>, sempre com <code>raise ... from error</code> para preservar a causa
+original.</p>
+<h2 id="10-os-pacotes-nao-reexportam-nada-nos-__init__py">10. Os pacotes não reexportam nada nos <code>__init__.py</code></h2>
+<p>Cada <code>__init__.py</code> tem só a docstring; os módulos são importados pelo caminho
+completo.</p>
+<p><strong>Por quê:</strong> <code>config/settings.py</code> instancia <code>Settings()</code> no import, o que lê e
+valida o <code>.env</code>. Com reexportação em <code>integrations/__init__.py</code>, importar o
+<code>ExcelWriter</code> puxaria o <code>Notifier</code>, que puxaria as settings — e passaria a exigir
+um <code>.env</code> completo só para escrever numa planilha local. Sem reexportação, o
+<code>ExcelWriter</code> é testável de forma isolada.</p>
+<h2 id="11-a-validacao-de-status-no-excel-e-uma-copia-manual-do-workflow-do-jira">11. A validação de status no Excel é uma cópia manual do workflow do Jira</h2>
+<p>O dropdown de validação em <code>BASE_TAREFAS.status</code> usa a lista <code>Backlog, To Do,
+In Progress, Code Review, Testing, Done</code>, copiada do workflow configurado no
+Jira em 22/07/2026.</p>
+<p><strong>Por quê:</strong> diferente de <code>tipo</code> (<code>TaskType</code>, um enum validado em
+<code>models/schemas.py</code>), <code>status</code> é texto livre vindo direto do Jira — não existe
+enum no lado Python para essa coluna. Uma lista fixa no código correria o
+mesmo risco que já se materializou com <code>tipo</code> (a issue <code>QT-6</code> com
+<code>task_type="Function"</code>, fora do enum, foi descartada silenciosamente do
+relatório). Por isso a lista de status não vive no código: vive só na
+validação de dropdown do Excel, e precisa ser copiada manualmente do Jira.</p>
+<p><strong>Trade-off:</strong> essa validação protege apenas edição manual da planilha. O
+pipeline sobrescreve <code>status</code> a cada execução com o valor vindo direto do
+Jira, sem passar pela validação do Excel — então um status novo no Jira
+aparece no relatório mesmo sem estar na lista do dropdown, mas editar a célula
+manualmente com um valor fora da lista é bloqueado.</p>
+<p><strong>Cuidado ao mexer nisso:</strong> se o workflow do Jira mudar (status renomeado,
+adicionado ou removido), essa lista precisa ser atualizada manualmente no
+Excel. Não há sincronização automática entre as duas.</p>
+<h2 id="12-identidade-de-colaboradores-saiu-de-employees_json-para-uma-tabela-no-postgres-com-o-excel-como-front-end-editavel">12. Identidade de colaboradores saiu de EMPLOYEES_JSON para uma tabela no Postgres, com o Excel como front-end editável</h2>
+<p>Antes, o mapeamento de colaboradores vivia em uma variável de ambiente
+(<code>EMPLOYEES_JSON</code>), um blob JSON lido na inicialização de <code>Settings</code>. Hoje
+<code>Settings.load_employee_registry</code> lê a tabela <code>funcionarios</code> do Postgres, e
+<code>EmployeeSyncService</code> é quem mantém essa tabela, sincronizando-a a partir da
+aba <code>DIM_FUNCIONARIO</code> da planilha antes de cada execução.</p>
+<p><strong>Por quê:</strong> um blob JSON em variável de ambiente só podia ser editado por
+quem tinha acesso ao <code>.env</code> e sabia a sintaxe correta; um erro de digitação
+quebrava a leitura do cadastro inteiro de colaboradores. Mover a fonte de
+verdade para uma tabela relacional, editável através de uma planilha que a
+equipe já usa no dia a dia (<code>DIM_FUNCIONARIO</code>), tira a barreira técnica de
+manter o cadastro atualizado. O Postgres também deixa esse cadastro
+disponível para outros consumidores, como o dashboard.</p>
+<p><strong>Trade-off:</strong> a inicialização do pipeline agora depende de o banco estar
+acessível. <code>load_employee_registry</code> propaga <code>SQLAlchemyError</code> quando a
+conexão falha, algo que o blob JSON local nunca precisou considerar. A
+sincronização de colaboradores também virou um passo a mais no início de
+cada execução, e precisa terminar antes de qualquer normalização de nomes.</p>
+<h2 id="13-sqlalchemy-foi-escolhido-como-orm-nao-core-ou-psycopg-cru">13. SQLAlchemy foi escolhido como ORM, não Core ou psycopg cru</h2>
+<p><code>PostgresClient</code> usa classes declarativas do SQLAlchemy (<code>Funcionarios</code>,
+<code>Tarefas</code>, etc.) e objetos <code>Session</code>, em vez de escrever SQL diretamente com
+<code>psycopg</code> ou usar a camada <code>Core</code> do próprio SQLAlchemy.</p>
+<p><strong>Por quê:</strong> parte da motivação é o objetivo de aprendizado do projeto. Este
+projeto também é um espaço para praticar ORM em um caso real, com upserts,
+relações e constraints. Como efeito colateral, o ORM também tira SQL do
+resto do código: os upserts em <code>PostgresClient</code> viram atribuição de atributo
+Python (<code>existing.canonical_name = ...</code>) em vez de <code>UPDATE ... SET</code>
+montado à mão.</p>
+<p><strong>Trade-off:</strong> cada upsert abre sua própria <code>Session</code> e faz um <code>SELECT</code>
+antes do <code>INSERT</code>/<code>UPDATE</code> (ver <code>upsert_employee</code>, <code>upsert_task</code>, etc.), o
+que é menos eficiente que um <code>INSERT ... ON CONFLICT</code> nativo do Postgres.
+Para o volume atual do pipeline (algumas centenas de linhas por execução)
+isso não é um problema; vale revisitar se o volume crescer.</p>
+<h2 id="14-personarea-no-dashboard-e-derivado-das-areas-das-tarefas-nao-de-uma-tabela-de-area-por-colaborador-no-postgres">14. <code>person.area</code> no dashboard é derivado das áreas das tarefas, não de uma tabela de área por colaborador no Postgres</h2>
+<p>O Excel tem <code>FATO_FUNCIONARIO_AREA</code>, uma relação N:N dedicada entre
+colaborador e área (ver decisão 4). O schema do Postgres não tem
+equivalente: não existe uma tabela <code>funcionario_area</code>. Quando o dashboard
+precisa da área de uma pessoa, deriva esse valor a partir das áreas das
+tarefas atribuídas a ela em <code>tarefas.area</code>.</p>
+<p><strong>Por quê:</strong> <code>FATO_FUNCIONARIO_AREA</code> nasceu no Excel para o dashboard
+baseado em planilha; replicar essa tabela ao migrar os indicadores para o
+Postgres significaria manter mais um cadastro sincronizado, sem que exista
+hoje uma necessidade que a área das tarefas não cubra. Na prática, quem
+trabalha majoritariamente em tarefas de uma área também pertence a ela.</p>
+<p><strong>Trade-off:</strong> um colaborador sem tarefas atribuídas em um período não tem
+área derivável no Postgres, diferente do Excel, onde a área da pessoa é
+cadastrada explicitamente. Se essa lacuna passar a importar, o caminho é
+adicionar uma tabela <code>funcionario_area</code> no Postgres espelhando
+<code>FATO_FUNCIONARIO_AREA</code>.</p>
+<h2 id="15-o-alerta-mostra-tarefa-atrasada-ha-n-dias-em-vez-do-numero-negativo-de-days_remaining">15. O alerta mostra "Tarefa atrasada há N dia(s)" em vez do número negativo de <code>days_remaining</code></h2>
+<p><code>Task.days_remaining</code> é negativo por design para tarefas vencidas (decisão
+2). <code>Notifier._build_message</code>, porém, nunca expõe esse negativo no texto:
+quando <code>days_remaining &lt; 0</code>, troca o rótulo para "Tarefa atrasada há" e
+mostra <code>abs(days_remaining)</code>.</p>
+<p><strong>Por quê:</strong> "-3 dias restantes" exige que quem lê faça a conta mental
+(negativo significa atrasado, e por quantos dias). "Tarefa atrasada há 3
+dia(s)" comunica a mesma informação sem esse passo extra, para um texto lido
+rapidamente dentro de uma notificação do Teams.</p>
+<p><strong>Cuidado ao mexer nisso:</strong> a inversão de sinal (<code>abs()</code>) e a troca de
+rótulo precisam andar juntas. Mudar uma sem a outra produz uma mensagem como
+"Dias restantes: -3 dia(s)" ou "Tarefa atrasada há -3 dia(s)", ambas
+incoerentes com o resto do texto.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar ao topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.top", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "Mais 1 nesta p\u00e1gina", "search.result.more.other": "Mais # nesta p\u00e1gina", "search.result.none": "Nenhum resultado encontrado", "search.result.one": "1 resultado encontrado", "search.result.other": "# resultados encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
