@@ -10,6 +10,8 @@ theme:
     - navigation.tabs
     - navigation.top
     - search.suggest
+  favicon: assets/favicon.svg
+  logo: assets/logo.svg
 
 plugins:
   - search
