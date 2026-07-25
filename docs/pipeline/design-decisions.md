@@ -1,5 +1,8 @@
 # Decisões de design
 
+> Também publicado como site navegável em
+> https://ndelecrodev.github.io/task-time-sync-docs/
+
 Registro das escolhas não óbvias do projeto e do porquê delas.
 
 ## 1. O upsert é feito por ID, varrendo a primeira coluna
@@ -178,7 +181,7 @@ Excel. Não há sincronização automática entre as duas.
 Antes, o mapeamento de colaboradores vivia em uma variável de ambiente
 (`EMPLOYEES_JSON`), um blob JSON lido na inicialização de `Settings`. Hoje
 `Settings.load_employee_registry` lê a tabela `funcionarios` do Postgres, e
-`EmployeeSyncService` é quem mantém essa tabela, sincronizando-a a partir da
+`EmployeeDataSyncService` é quem mantém essa tabela, sincronizando-a a partir da
 aba `DIM_FUNCIONARIO` da planilha antes de cada execução.
 
 **Por quê:** um blob JSON em variável de ambiente só podia ser editado por
@@ -234,6 +237,13 @@ cadastrada explicitamente. Se essa lacuna passar a importar, o caminho é
 adicionar uma tabela `funcionario_area` no Postgres espelhando
 `FATO_FUNCIONARIO_AREA`.
 
+**Atualização:** a tabela `funcionario_area` foi criada no Postgres (ver
+decisão 17), mas para sincronizar `FATO_FUNCIONARIO_AREA` via
+`EmployeeDataSyncService.sync_areas`, não para alimentar o `person.area` do
+dashboard descrito acima. A lacuna do trade-off ("colaborador sem tarefa não
+tem área derivável") segue existindo enquanto o dashboard não passar a
+consultar essa tabela.
+
 ## 15. O alerta mostra "Tarefa atrasada há N dia(s)" em vez do número negativo de `days_remaining`
 
 `Task.days_remaining` é negativo por design para tarefas vencidas (decisão
@@ -250,3 +260,54 @@ rapidamente dentro de uma notificação do Teams.
 rótulo precisam andar juntas. Mudar uma sem a outra produz uma mensagem como
 "Dias restantes: -3 dia(s)" ou "Tarefa atrasada há -3 dia(s)", ambas
 incoerentes com o resto do texto.
+
+## 16. `EmployeeSyncService` virou `EmployeeDataSyncService`, com um `read_sheet_as_dicts` genérico em vez de três leituras quase iguais
+
+A sincronização de colaboradores ganhou uma segunda responsabilidade: além de
+`DIM_FUNCIONARIO`, `EmployeeDataSyncService.sync_areas` agora lê também
+`DIM_FUNCIONARIO_AREA` e `FATO_FUNCIONARIO_AREA`. Para isso, `ExcelReader`
+ganhou um método genérico, `read_sheet_as_dicts(file_path, sheet_name,
+table_name)`, que abre o workbook, acha a tabela e monta a lista de dicts por
+linha. `read_employees`, `read_dim_employee_area` e `read_fato_employee_area`
+chamam esse helper, cada um só fixando o nome da aba e da tabela que lê.
+
+**Por quê:** as três leituras faziam a mesma sequência de passos (abrir
+workbook, achar tabela, mapear colunas, iterar linhas), variando só a aba e a
+tabela. Manter três cópias dessa lógica criaria três lugares para corrigir o
+mesmo bug se o formato de leitura mudasse. O nome do serviço também mudou de
+`EmployeeSyncService` para `EmployeeDataSyncService` porque a classe deixou de
+sincronizar só identidade; manter o nome antigo passaria a ser enganoso.
+
+**Trade-off:** nenhum digno de nota. `read_sheet_as_dicts` cobre exatamente o
+mesmo contrato que `read_employees` já tinha antes da extração; é uma
+reorganização de método, não uma mudança de comportamento.
+
+## 17. Vínculo colaborador-área usa duas tabelas no Postgres (`areas` + `funcionario_area`), não uma coluna de texto
+
+`upsert_area_and_link` resolve ou cria uma linha em `Area` (tabela `areas`) e
+depois resolve ou cria a linha de associação em `FuncionarioArea` (tabela
+`funcionario_area`, chave composta `funcionario_id` + `area_id`), em vez de
+gravar o nome da área direto numa coluna de `Funcionarios`.
+
+**Por quê:** mesmo raciocínio da decisão 4 para `etiquetas`/`tarefa_etiqueta`:
+um colaborador pode atuar em mais de uma área, então a relação é N:N, não N:1.
+Uma coluna de texto em `funcionarios` só comportaria uma área por colaborador
+e exigiria duplicar o nome da área em cada linha, sem uma dimensão para
+agrupar por área depois.
+
+## 18. Tarefas que somem do `JIRA_JQL` são arquivadas por timestamp, não apagadas
+
+`PostgresClient.archive_missing_tasks` roda ao fim de `sync_jira` e marca
+`tarefas.arquivada_em = now()` em toda linha cujo `task_id` não apareceu na
+busca da execução atual e que ainda não tinha sido arquivada; a linha nunca é
+apagada.
+
+**Por quê:** segue a mesma filosofia da decisão 8, nunca descartar
+silenciosamente. Uma falha transitória do Jira ou uma `JIRA_JQL` mal
+configurada pode fazer a lista de issues devolvida vir vazia ou incompleta;
+sem o arquivamento por timestamp, um `DELETE` nesse momento apagaria tarefas
+que continuam existindo no Jira, e o próximo `sync_jira` bem-sucedido não
+teria como recuperar o que foi perdido. Marcar com timestamp em vez de
+apagar deixa o problema visível e reversível.
+
+**Trade-off:** Cuidado ao mexer nisso: o conjunto usado para decidir o que arquivar precisa ser all_ids_from_jira (toda issue key devolvida pela busca crua ao Jira, antes de qualquer validação), não valid_ids (as tarefas que já passaram pela validação do Pydantic, decisão 8). Usar valid_ids faria uma issue descartada por validação (priority/tipo fora do enum, por exemplo) ser arquivada como se tivesse desaparecido do Jira, mesmo continuando ativa lá — confundindo "não veio nessa busca" com "veio, mas falhou na validação". Essa foi, de fato, uma versão inicial com esse bug, corrigida antes de entrar em produção.

@@ -1,5 +1,8 @@
 # Modelo de dados
 
+> Também publicado como site navegável em
+> https://ndelecrodev.github.io/task-time-sync-docs/
+
 ## Modelos Python
 
 Definidos em `src/sop_pipeline/models/schemas.py`. São modelos Pydantic: uma
@@ -13,14 +16,14 @@ camada de mapeamento normaliza os dois para um nome canônico usado como chave d
 junção.
 
 **Fonte editável:** a aba `DIM_FUNCIONARIO` da planilha é onde alguém corrige ou
-adiciona colaboradores manualmente. Antes de cada execução, `EmployeeSyncService`
+adiciona colaboradores manualmente. Antes de cada execução, `EmployeeDataSyncService`
 lê essa aba com `ExcelReader` e grava as linhas na tabela `funcionarios` do
 Postgres via `PostgresClient.upsert_employee`, casando por `jira_email` ou
 `clockify_email`.
 
 **Duplicatas:** a primeira linha a usar um dado `jira_email` ou `clockify_email`
 é sincronizada normalmente; qualquer linha seguinte que repita um dos dois é
-tratada como duplicata (`EmployeeSyncService._split_duplicates`), recebe um
+tratada como duplicata (`EmployeeDataSyncService._split_duplicates`), recebe um
 motivo e é gravada na aba `DUPLICADOS_REMOVIDOS` em vez de ser sincronizada.
 
 **Uso em runtime:** `Settings.load_employee_registry` lê a tabela `funcionarios`
@@ -30,7 +33,7 @@ Clockify) para o nome canônico.
 
 **Foto do colaborador:** `funcionarios.photo_url` guarda a URL pública do
 Supabase Storage da foto do colaborador, ou `None` quando nenhuma foto foi
-enviada ainda. `EmployeeSyncService` propaga o valor lido de `DIM_FUNCIONARIO`
+enviada ainda. `EmployeeDataSyncService` propaga o valor lido de `DIM_FUNCIONARIO`
 a cada sincronização; é esse campo que o dashboard de indicadores (repositório
 separado) consome para exibir a foto de cada pessoa.
 
@@ -199,8 +202,10 @@ gravação equivalente na aba correspondente do `.xlsx`.
 | Tabela | Papel | Upsert por |
 |---|---|---|
 | `funcionarios` | Identidade de colaboradores, sincronizada a partir de `DIM_FUNCIONARIO`. Inclui `photo_url`, a URL da foto usada pelo dashboard. | `upsert_employee` |
-| `tarefas` | Uma linha por issue do Jira; `responsavel_id` é `NULL` quando o colaborador não foi mapeado. | `upsert_task` |
+| `tarefas` | Uma linha por issue do Jira; `responsavel_id` é `NULL` quando o colaborador não foi mapeado. `arquivada_em` guarda o timestamp em que a tarefa deixou de aparecer no `JIRA_JQL` (`NULL` enquanto ativa); a linha nunca é apagada. | `upsert_task` (arquivamento: `archive_missing_tasks`) |
 | `detalhes_tarefa` | Descrição longa de uma tarefa. | `upsert_task_detail` |
 | `horas` | Um apontamento de horas do Clockify; `funcionario_id` é `NULL` quando o colaborador não foi mapeado. | `upsert_time_entry` |
 | `etiquetas` | Tags distintas atribuídas a tarefas. | `upsert_tag_and_link` |
 | `tarefa_etiqueta` | Associação N:N entre `tarefas` e `etiquetas`. | `upsert_tag_and_link` |
+| `areas` | Áreas de atuação dos colaboradores, sincronizadas a partir de `DIM_FUNCIONARIO_AREA`. | `upsert_area_and_link` |
+| `funcionario_area` | Associação N:N entre `funcionarios` e `areas`, sincronizada a partir de `FATO_FUNCIONARIO_AREA`; chave composta `funcionario_id` + `area_id`, ambas FK. | `upsert_area_and_link` |
