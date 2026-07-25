@@ -1,73 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <url>
-        <loc>None./</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="pt" href="None"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/"/>
     </url>
     <url>
-        <loc>Nonedashboard/overview/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/dashboard/overview/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="pt" href="Nonedashboard/overview/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/dashboard/overview/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/dashboard/overview/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/dashboard/overview/"/>
     </url>
     <url>
-        <loc>Nonepipeline/architecture/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/pipeline/architecture/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="pt" href="Nonepipeline/architecture/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/pipeline/architecture/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/pipeline/architecture/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/architecture/"/>
     </url>
     <url>
-        <loc>Nonepipeline/data-model/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/pipeline/data-model/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="pt" href="Nonepipeline/data-model/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/pipeline/data-model/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/pipeline/data-model/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/data-model/"/>
     </url>
     <url>
-        <loc>Nonepipeline/design-decisions/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/pipeline/design-decisions/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="pt" href="Nonepipeline/design-decisions/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/pipeline/design-decisions/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/pipeline/design-decisions/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/design-decisions/"/>
     </url>
     <url>
-        <loc>Noneen/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/en/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/"/>
-        <xhtml:link rel="alternate" hreflang="pt" href="None"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/"/>
     </url>
     <url>
-        <loc>Noneen/dashboard/overview/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/en/dashboard/overview/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/dashboard/overview/"/>
-        <xhtml:link rel="alternate" hreflang="pt" href="Nonedashboard/overview/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/dashboard/overview/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/dashboard/overview/"/>
     </url>
     <url>
-        <loc>Noneen/pipeline/architecture/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/architecture/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/pipeline/architecture/"/>
-        <xhtml:link rel="alternate" hreflang="pt" href="Nonepipeline/architecture/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/architecture/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/pipeline/architecture/"/>
     </url>
     <url>
-        <loc>Noneen/pipeline/data-model/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/data-model/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/pipeline/data-model/"/>
-        <xhtml:link rel="alternate" hreflang="pt" href="Nonepipeline/data-model/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/data-model/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/pipeline/data-model/"/>
     </url>
     <url>
-        <loc>Noneen/pipeline/design-decisions/</loc>
+        <loc>https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/design-decisions/</loc>
         <lastmod>2026-07-25</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/pipeline/design-decisions/"/>
-        <xhtml:link rel="alternate" hreflang="pt" href="Nonepipeline/design-decisions/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://ndelecrodev.github.io/task-time-sync-docs/en/pipeline/design-decisions/"/>
+        <xhtml:link rel="alternate" hreflang="pt" href="https://ndelecrodev.github.io/task-time-sync-docs/pipeline/design-decisions/"/>
     </url>
 </urlset>
