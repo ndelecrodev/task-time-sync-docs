@@ -714,6 +714,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#20-historico_progressopercentual-e-gravado-como-valor-nao-como-formula-do-excel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        20. HISTORICO_PROGRESSO.percentual é gravado como valor, não como fórmula do Excel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#21-etlservice_build_task-recorre-a-employeeregistryget_jira_email-quando-o-jira-nao-informa-o-e-mail-do-assignee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        21. EtlService._build_task recorre a EmployeeRegistry.get_jira_email quando o Jira não informa o e-mail do assignee
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1050,6 +1072,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#20-historico_progressopercentual-e-gravado-como-valor-nao-como-formula-do-excel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        20. HISTORICO_PROGRESSO.percentual é gravado como valor, não como fórmula do Excel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#21-etlservice_build_task-recorre-a-employeeregistryget_jira_email-quando-o-jira-nao-informa-o-e-mail-do-assignee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        21. EtlService._build_task recorre a EmployeeRegistry.get_jira_email quando o Jira não informa o e-mail do assignee
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1330,6 +1374,46 @@ tinham antes de a tarefa desaparecer da busca, não serem sobrescritos ou
 zerados. Se um <code>task_id</code> vindo do Postgres não tiver linha correspondente em
 <code>BASE_TAREFAS</code> (não deveria acontecer, já que a tarefa foi escrita lá antes
 de ser arquivada), o método pula essa tarefa em vez de lançar erro.</p>
+<h2 id="20-historico_progressopercentual-e-gravado-como-valor-nao-como-formula-do-excel">20. <code>HISTORICO_PROGRESSO.percentual</code> é gravado como valor, não como fórmula do Excel</h2>
+<p><code>ExcelWriter.save_progress_snapshot</code> calcula <code>percentual = concluidas /
+total_tarefas</code> em Python e escreve o resultado na célula. Diferente de
+<code>dias_restantes</code>, <code>atrasado</code> e <code>status_prazo</code> (decisão 2), essa coluna não
+está de fora do que o Python grava — ela é sempre um valor estático.</p>
+<p><strong>Por quê:</strong> a decisão 2 existe porque aquelas colunas descrevem o estado
+<em>atual</em> de uma tarefa ainda aberta, e por isso devem recalcular sozinhas toda
+vez que alguém abre a planilha. <code>HISTORICO_PROGRESSO</code> é o caso oposto: cada
+linha é um retrato do progresso em uma data específica (<code>snapshot_date</code>), e a
+razão de existir dessa aba é justamente preservar esse retrato. Se
+<code>percentual</code> fosse fórmula, ela recalcularia com os totais de hoje toda vez
+que o arquivo fosse aberto, e cada linha antiga passaria a mentir sobre o
+que o progresso realmente era na data que ela representa — apagando
+silenciosamente o próprio histórico que a aba deveria guardar. Gravar o
+valor no momento do snapshot é o que faz da linha um registro histórico de
+verdade, em vez de mais uma visão do presente.</p>
+<h2 id="21-etlservice_build_task-recorre-a-employeeregistryget_jira_email-quando-o-jira-nao-informa-o-e-mail-do-assignee">21. <code>EtlService._build_task</code> recorre a <code>EmployeeRegistry.get_jira_email</code> quando o Jira não informa o e-mail do assignee</h2>
+<p>Quando <code>fields.assignee.emailAddress</code> vem nulo mas há um assignee de fato
+(<code>fields.assignee</code> não é <code>None</code>), <code>_build_task</code> primeiro normaliza o
+<code>displayName</code> do Jira para o nome canônico via
+<code>normalize_employee_identifier</code>, e só então chama
+<code>EmployeeRegistry.get_jira_email</code> com esse nome já canonicalizado, nunca
+com o <code>displayName</code> bruto. O fallback não roda no branch de tarefa sem
+responsável (<code>fields.assignee is None</code>), onde <code>assignee</code> é o sentinel
+<code>NO_RESPONSIBLE</code> — chamar <code>get_jira_email</code> com um sentinel como se fosse
+nome de pessoa não faz sentido e nunca deve acontecer.</p>
+<p><strong>Por quê:</strong> as configurações de privacidade de visibilidade de e-mail por
+usuário do Jira Cloud (uma mudança da era GDPR) podem deixar
+<code>emailAddress</code> nulo mesmo para um assignee corretamente definido e
+visível em qualquer outro lugar do Jira — isso é comportamento esperado
+do Jira, não um dado faltando por falha deste projeto. Usar o nome já
+canonicalizado, e não o <code>displayName</code> bruto do Jira, é essencial: os
+nomes cadastrados na <code>DIM_FUNCIONARIO</code> podem divergir do <code>displayName</code>
+que o Jira retorna, e foi exatamente essa divergência que causou um bug
+anterior envolvendo um colaborador chamado "Miguel Felix Cardozo de
+Tomy" — buscar pelo nome bruto teria o mesmo problema aqui. Com isso, o
+cadastro de colaboradores (<code>DIM_FUNCIONARIO</code> / <code>EmployeeRegistry</code>) passa
+a ser a segunda fonte de verdade para o e-mail de um colaborador,
+especificamente para permitir @menções no Teams quando o próprio Jira
+não fornece um e-mail.</p>
 
 
 

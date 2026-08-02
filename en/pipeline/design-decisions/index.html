@@ -670,6 +670,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#20-historico_progressopercentual-is-written-as-a-value-not-an-excel-formula" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        20. HISTORICO_PROGRESSO.percentual is written as a value, not an Excel formula
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#21-etlservice_build_task-falls-back-to-employeeregistryget_jira_email-when-jira-omits-the-assignees-email" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        21. EtlService._build_task falls back to EmployeeRegistry.get_jira_email when Jira omits the assignee's email
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -962,6 +984,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#20-historico_progressopercentual-is-written-as-a-value-not-an-excel-formula" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        20. HISTORICO_PROGRESSO.percentual is written as a value, not an Excel formula
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#21-etlservice_build_task-falls-back-to-employeeregistryget_jira_email-when-jira-omits-the-assignees-email" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        21. EtlService._build_task falls back to EmployeeRegistry.get_jira_email when Jira omits the assignee's email
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1187,6 +1231,44 @@ text that gets read quickly inside a Teams notification.</p>
 swap need to move together. Changing one without the other produces a
 message like "Dias restantes: -3 dia(s)" or "Tarefa atrasada há -3
 dia(s)", both inconsistent with the rest of the text.</p>
+<h2 id="20-historico_progressopercentual-is-written-as-a-value-not-an-excel-formula">20. <code>HISTORICO_PROGRESSO.percentual</code> is written as a value, not an Excel formula</h2>
+<p><code>ExcelWriter.save_progress_snapshot</code> computes <code>percentual = concluidas /
+total_tarefas</code> in Python and writes the result into the cell. Unlike
+<code>dias_restantes</code>, <code>atrasado</code>, and <code>status_prazo</code> (decision 2), this column
+is not left out of what Python writes — it is always a static value.</p>
+<p><strong>Why:</strong> decision 2 exists because those columns describe the <em>current</em>
+state of a task that is still open, and so they need to recalculate on
+their own every time someone opens the spreadsheet. <code>HISTORICO_PROGRESSO</code>
+is the opposite case: each row is a snapshot of progress on a specific date
+(<code>snapshot_date</code>), and the entire reason that sheet exists is to preserve
+that snapshot. If <code>percentual</code> were a formula, it would recompute against
+today's totals every time the file is opened, and every past row would
+silently start lying about what progress actually was on the date it
+represents — erasing the very history the sheet is meant to keep. Writing
+the value at snapshot time is what makes the row a genuine historical
+record instead of one more view of the present.</p>
+<h2 id="21-etlservice_build_task-falls-back-to-employeeregistryget_jira_email-when-jira-omits-the-assignees-email">21. <code>EtlService._build_task</code> falls back to <code>EmployeeRegistry.get_jira_email</code> when Jira omits the assignee's email</h2>
+<p>When <code>fields.assignee.emailAddress</code> comes back null but there is an
+actual assignee (<code>fields.assignee</code> is not <code>None</code>), <code>_build_task</code> first
+normalizes the Jira <code>displayName</code> to the canonical name via
+<code>normalize_employee_identifier</code>, and only then calls
+<code>EmployeeRegistry.get_jira_email</code> with that already-canonicalized name,
+never with the raw <code>displayName</code>. The fallback does not run on the
+no-assignee branch (<code>fields.assignee is None</code>), where <code>assignee</code> is the
+<code>NO_RESPONSIBLE</code> sentinel — calling <code>get_jira_email</code> with a sentinel as
+if it were a person's name makes no sense and must never happen.</p>
+<p><strong>Why:</strong> Jira Cloud's per-user email-visibility privacy settings (a
+GDPR-era change) can leave <code>emailAddress</code> null even for an assignee that
+is correctly set and visible everywhere else in Jira — this is expected
+Jira behavior, not missing data on this project's side. Using the
+already-canonicalized name instead of Jira's raw <code>displayName</code> is
+essential: names registered in <code>DIM_FUNCIONARIO</code> can differ from the
+<code>displayName</code> Jira returns, and that exact mismatch caused an earlier
+bug involving an employee named "Miguel Felix Cardozo de Tomy" —
+looking up the raw name here would hit the same problem. This makes the
+employee registry (<code>DIM_FUNCIONARIO</code> / <code>EmployeeRegistry</code>) a second
+source of truth for an employee's email, specifically so outbound Teams
+@mentions still have one when Jira itself won't provide it.</p>
 
 
 
