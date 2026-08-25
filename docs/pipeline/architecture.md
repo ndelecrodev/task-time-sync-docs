@@ -1,8 +1,5 @@
 # Arquitetura
 
-> Também publicado como site navegável em
-> https://ndelecrodev.github.io/task-time-sync-docs/
-
 ## Fluxo de uma execução
 
 Uma execução (`sop_pipeline.pipeline.run`) é uma sequência linear com três etapas
@@ -27,9 +24,13 @@ de sincronização isoladas entre si.
         ▼
     PostgresClient.upsert_area_and_link ─▶ tabelas areas, funcionario_area (Postgres/Supabase)
 
- 3. sync_jira
-    JiraClient.fetch_tasks(JIRA_JQL)          ── paginação por nextPageToken
-        │  list[dict] cru
+ 3. sync_clickup
+    ClickUpClient.fetch_tasks(CLICKUP_TEAM_ID, CLICKUP_SPACE_ID) ── paginação por
+                               número de página, GET /team/{team_id}/task
+        │  list[dict] cru (toda tarefa do Space, de qualquer pasta)
+        ▼
+    pipeline._filter_allowed_folders
+        │  descarta tarefas cuja folder.id não está em CLICKUP_FOLDER_IDS
         ▼
     EtlService.transform_tasks    ─▶ list[Task]
     EtlService.transform_details  ─▶ list[TaskDetail]
@@ -41,9 +42,7 @@ de sincronização isoladas entre si.
     PostgresClient.upsert_task / upsert_task_detail / upsert_tag_and_link
                                ─▶ tabelas tarefas, detalhes_tarefa, etiquetas, tarefa_etiqueta
     PostgresClient.archive_missing_tasks
-                               ─▶ marca tarefas.arquivada_em nas tarefas que sumiram do JIRA_JQL (nunca apaga)
-    ExcelWriter.mark_archived_tasks
-                               ─▶ espelha a mesma marca em BASE_TAREFAS.arquivada_em, sem tocar em mais nenhum campo da linha
+                               ─▶ marca tarefas.arquivada_em nas tarefas que sumiram da busca (nunca apaga)
 
  4. sync_clockify
     ClockifyClient.list_users
@@ -80,18 +79,17 @@ sheet_name, table_name)`, que concentra a lógica de abrir o workbook, achar a
 tabela e montar a lista de dicts por linha. Cada wrapper só fixa o nome da aba e
 da tabela que lê.
 
-Tarefas que somem do resultado do `JIRA_JQL` (fechadas fora do escopo, movidas,
-apagadas) não são removidas do Postgres nem do Excel: `PostgresClient.archive_missing_tasks`
-marca `tarefas.arquivada_em` com o timestamp da execução atual em toda linha cujo
-`task_id` não veio na busca, e `ExcelWriter.mark_archived_tasks` espelha essa mesma
-marca em `BASE_TAREFAS.arquivada_em`, sem tocar em nenhum outro campo da linha —
-mantendo o histórico completo nos dois destinos, em vez de apagar.
+Tarefas que somem do resultado da busca ao Space/pastas configurados (fechadas
+fora do escopo, movidas, apagadas) não são removidas do Postgres:
+`PostgresClient.archive_missing_tasks` marca `tarefas.arquivada_em` com o
+timestamp da execução atual em toda linha cujo `task_id` não veio na busca,
+mantendo o histórico completo em vez de apagar.
 
 ## Camadas
 
 | Camada | Módulos | Regra |
 |---|---|---|
-| **Clients** | `clients/jira_client.py`, `clients/clockify_client.py`, `clients/postgres_client.py` | Falam HTTP/SQL e paginação. `PostgresClient` faz upsert no schema Supabase via SQLAlchemy; os outros dois devolvem `dict` cru, sem interpretar nada. |
+| **Clients** | `clients/clickup_client.py`, `clients/clockify_client.py`, `clients/postgres_client.py` | Falam HTTP/SQL e paginação. `PostgresClient` faz upsert no schema Supabase via SQLAlchemy; os outros dois devolvem `dict` cru, sem interpretar nada. |
 | **Services** | `services/etl_service.py`, `services/alert_service.py`, `services/employee_data_sync_service.py` | Regra de negócio. `EtlService` e `AlertService` não fazem I/O de rede nem de arquivo; `EmployeeDataSyncService` (renomeada de `EmployeeSyncService`) é a exceção deliberada, já que orquestra `ExcelReader` e `PostgresClient` para sincronizar identidade (`DIM_FUNCIONARIO`) e vínculos de área (`DIM_FUNCIONARIO_AREA` + `FATO_FUNCIONARIO_AREA`) com o Postgres. |
 | **Integrations** | `integrations/excel_writer.py`, `notifier.py`, `storage_client.py` | Saídas do pipeline. Cada uma conhece um destino externo. |
 | **Models** | `models/schemas.py` | Contrato entre as camadas. Validação via Pydantic. |
@@ -100,19 +98,20 @@ mantendo o histórico completo nos dois destinos, em vez de apagar.
 
 A dependência é sempre para dentro: `pipeline` → `integrations`/`services` →
 `models`/`config`. Nenhum client conhece o `ExcelWriter`, e o `ExcelWriter` não
-conhece o Jira.
+conhece o ClickUp.
 
 ## Isolamento de falhas
 
 As três etapas de sincronização rodam cada uma no seu próprio `try/except` dentro
-de `run()`. Uma indisponibilidade do Jira não impede a coleta das horas do
+de `run()`. Uma indisponibilidade do ClickUp não impede a coleta das horas do
 Clockify, e vice-versa. Cada falha é logada e enviada ao Sentry, e a execução
 segue.
 
-Se o `sync_jira` falha, o passo de alertas é **pulado** com um `warning` explícito,
-em vez de rodar contra uma lista vazia. A distinção importa: "o Jira não respondeu"
-não é a mesma coisa que "o Jira não tem tarefas em risco", e tratar as duas
-situações igual fazia uma execução quebrada parecer limpa no log.
+Se o `sync_clickup` falha, o passo de alertas é **pulado** com um `warning`
+explícito, em vez de rodar contra uma lista vazia. A distinção importa: "o
+ClickUp não respondeu" não é a mesma coisa que "o ClickUp não tem tarefas em
+risco", e tratar as duas situações igual fazia uma execução quebrada parecer
+limpa no log.
 
 ## Observabilidade
 
