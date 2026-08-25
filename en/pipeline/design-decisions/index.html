@@ -682,10 +682,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#21-etlservice_build_task-falls-back-to-employeeregistryget_jira_email-when-jira-omits-the-assignees-email" class="md-nav__link">
+  <a href="#21-etlservice_build_task-falls-back-to-employeeregistryget_registered_email-when-the-task-source-omits-the-assignees-email" class="md-nav__link">
     <span class="md-ellipsis">
       
-        21. EtlService._build_task falls back to EmployeeRegistry.get_jira_email when Jira omits the assignee's email
+        21. EtlService._build_task falls back to EmployeeRegistry.get_registered_email when the task source omits the assignee's email
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#22-the-task-source-migrated-from-jira-to-clickup-only-in-the-extraction-layer-task-stayed-the-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        22. The task source migrated from Jira to ClickUp only in the extraction layer; Task stayed the contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#23-synced-clickup-folders-are-an-explicit-allowlist-not-every-folder-in-the-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        23. Synced ClickUp folders are an explicit allowlist, not "every folder in the Space"
       
     </span>
   </a>
@@ -996,10 +1018,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#21-etlservice_build_task-falls-back-to-employeeregistryget_jira_email-when-jira-omits-the-assignees-email" class="md-nav__link">
+  <a href="#21-etlservice_build_task-falls-back-to-employeeregistryget_registered_email-when-the-task-source-omits-the-assignees-email" class="md-nav__link">
     <span class="md-ellipsis">
       
-        21. EtlService._build_task falls back to EmployeeRegistry.get_jira_email when Jira omits the assignee's email
+        21. EtlService._build_task falls back to EmployeeRegistry.get_registered_email when the task source omits the assignee's email
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#22-the-task-source-migrated-from-jira-to-clickup-only-in-the-extraction-layer-task-stayed-the-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        22. The task source migrated from Jira to ClickUp only in the extraction layer; Task stayed the contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#23-synced-clickup-folders-are-an-explicit-allowlist-not-every-folder-in-the-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        23. Synced ClickUp folders are an explicit allowlist, not "every folder in the Space"
       
     </span>
   </a>
@@ -1247,28 +1291,132 @@ silently start lying about what progress actually was on the date it
 represents — erasing the very history the sheet is meant to keep. Writing
 the value at snapshot time is what makes the row a genuine historical
 record instead of one more view of the present.</p>
-<h2 id="21-etlservice_build_task-falls-back-to-employeeregistryget_jira_email-when-jira-omits-the-assignees-email">21. <code>EtlService._build_task</code> falls back to <code>EmployeeRegistry.get_jira_email</code> when Jira omits the assignee's email</h2>
-<p>When <code>fields.assignee.emailAddress</code> comes back null but there is an
-actual assignee (<code>fields.assignee</code> is not <code>None</code>), <code>_build_task</code> first
-normalizes the Jira <code>displayName</code> to the canonical name via
+<h2 id="21-etlservice_build_task-falls-back-to-employeeregistryget_registered_email-when-the-task-source-omits-the-assignees-email">21. <code>EtlService._build_task</code> falls back to <code>EmployeeRegistry.get_registered_email</code> when the task source omits the assignee's email</h2>
+<p>When an assignee actually exists but comes without an email, <code>_build_task</code>
+first normalizes the raw identifier (today ClickUp's <code>username</code>; it used to
+be Jira's <code>displayName</code>) to the canonical name via
 <code>normalize_employee_identifier</code>, and only then calls
-<code>EmployeeRegistry.get_jira_email</code> with that already-canonicalized name,
-never with the raw <code>displayName</code>. The fallback does not run on the
-no-assignee branch (<code>fields.assignee is None</code>), where <code>assignee</code> is the
-<code>NO_RESPONSIBLE</code> sentinel — calling <code>get_jira_email</code> with a sentinel as
-if it were a person's name makes no sense and must never happen.</p>
-<p><strong>Why:</strong> Jira Cloud's per-user email-visibility privacy settings (a
-GDPR-era change) can leave <code>emailAddress</code> null even for an assignee that
-is correctly set and visible everywhere else in Jira — this is expected
-Jira behavior, not missing data on this project's side. Using the
-already-canonicalized name instead of Jira's raw <code>displayName</code> is
-essential: names registered in <code>DIM_FUNCIONARIO</code> can differ from the
-<code>displayName</code> Jira returns, and that exact mismatch caused an earlier
-bug involving an employee named "Miguel Felix Cardozo de Tomy" —
+<code>EmployeeRegistry.get_registered_email</code> with that already-canonicalized
+name, never with the raw identifier. The fallback does not run on the
+no-assignee branch (an empty assignee list), where <code>assignee</code> is the
+<code>NO_RESPONSIBLE</code> sentinel — calling <code>get_registered_email</code> with a sentinel
+as if it were a person's name makes no sense and must never happen. The
+method was named <code>get_jira_email</code> until the ClickUp migration (decision
+22); it was renamed because it now resolves an employee's registered email
+regardless of the task source, not just Jira's.</p>
+<p><strong>Why:</strong> per-user email-visibility privacy settings — a GDPR-era change on
+Jira Cloud, an equivalent possibility on ClickUp — can leave the assignee's
+email null even for someone correctly assigned and visible everywhere else
+in the tool. Using the already-canonicalized name instead of the source's
+raw identifier is essential: names registered in <code>DIM_FUNCIONARIO</code> can
+differ from what the task source returns, and that exact mismatch caused an
+earlier bug involving an employee named "Miguel Felix Cardozo de Tomy" —
 looking up the raw name here would hit the same problem. This makes the
 employee registry (<code>DIM_FUNCIONARIO</code> / <code>EmployeeRegistry</code>) a second
 source of truth for an employee's email, specifically so outbound Teams
-@mentions still have one when Jira itself won't provide it.</p>
+@mentions still have one when the task source itself won't provide it.</p>
+<h2 id="22-the-task-source-migrated-from-jira-to-clickup-only-in-the-extraction-layer-task-stayed-the-contract">22. The task source migrated from Jira to ClickUp only in the extraction layer; <code>Task</code> stayed the contract</h2>
+<p><code>clients/jira_client.py</code> was replaced by <code>clients/clickup_client.py</code>, and
+<code>EtlService._build_task</code>/<code>transform_details</code> were rewritten for ClickUp's
+shape (a list of assignees, <code>custom_fields</code> as a list, millisecond
+timestamps, and so on — see <a href="../data-model/"><code>data-model.md</code></a>). Clockify, the
+Excel output, the Postgres output, Teams alerts, employee identity
+resolution, and task archiving stayed exactly as they were: none of those
+modules knew Jira directly, only <code>Task</code> (<code>models/schemas.py</code>), and <code>Task</code>
+did not change.</p>
+<p><strong>Why:</strong> the project switched task-management tools, but the Postgres
+schema, the spreadsheet's formulas and tabs, and the Teams alert flows have
+no reason to change because of that — they are all consumers of the <code>Task</code>
+model, not of the source API. Keeping <code>Task</code> intact (the single most
+important decision of this migration) turned a vendor swap into a change
+contained to the extraction layer: only the HTTP client and the dict→<code>Task</code>
+mapping needed rewriting. This confirms, in practice, the design described
+in the <a href="../architecture/#layers">architecture</a> decision: "no client knows
+about <code>ExcelWriter</code>, and <code>ExcelWriter</code> doesn't know about Jira" — now reads
+the same with "Jira" swapped for "ClickUp".</p>
+<p>Identifiers that are <strong>data</strong>, not code — the <code>funcionarios.jira_email</code>
+column in Postgres, the <code>jira_email</code> header on the Excel <code>DIM_FUNCIONARIO</code>
+tab, and the <code>EmployeeMapping.jira_email</code> field that mirrors both — were
+initially kept under their old name, for the same reason as decision 6:
+renaming them would break the runtime match against the schema already
+deployed in Supabase and against the real spreadsheet, with no import error
+to warn about it. Only the <code>EmployeeRegistry.get_jira_email</code> method was
+renamed at that point (decision 21), because it is code, not data.</p>
+<p><strong>Later rename of <code>jira_email</code> to <code>clickup_email</code>:</strong> in a follow-up task, the
+three data identifiers above were in fact renamed — the <code>funcionarios.jira_email</code>
+column and its <code>check_email_jira</code> check constraint in Postgres, the
+<code>jira_email</code> header on the Excel <code>DIM_FUNCIONARIO</code> tab, and the
+<code>EmployeeMapping.jira_email</code> field, all became <code>clickup_email</code> /
+<code>check_email_clickup</code>. The reasoning: unlike the code rename in decision 21
+(deferred until the symbol itself stopped making sense), keeping a data
+identifier named <code>jira_email</code> indefinitely — now that the project no longer
+talks to Jira at all — was the kind of name that needlessly confuses the
+next person reading the schema, with no real compatibility benefit: the
+column and header could be renamed atomically and deliberately (a Postgres
+schema migration, a manual header update in Excel via Claude for Excel, and
+the matching Python-side field), unlike an uncoordinated silent rename. The
+chosen name, <code>clickup_email</code>, follows the convention already used by the
+sibling <code>clockify_email</code> column — naming after the concrete integrated
+system rather than a generic term like "task_source_email" — and matches
+the pattern of the <code>CLICKUP_*</code> identifiers already present in <code>Settings</code> and
+the <code>clients/clickup_client.py</code> module.</p>
+<p><strong>Multiple assignees, and the @mention trade-off:</strong> unlike Jira, ClickUp
+allows more than one assignee per task. Each assignee is normalized
+individually and the canonical names are joined into <code>Task.assignee</code>
+(<code>"Nicolas Delecrode, Daniel Nogueira"</code>), a call made by the project owner.
+But <code>Task.assignee_email</code> is still a single email — it feeds one Teams
+@mention, and an @mention can't target several people at once — so only the
+<strong>first</strong> assignee's email is used. A task with multiple assignees always
+notifies only the first one by email; the rest still show up in the report
+(the spreadsheet's <code>responsavel</code> column and <code>tarefas</code> in Postgres) but don't
+get a direct @mention.</p>
+<p><strong>The <code>task_type</code> trade-off:</strong> ClickUp has no direct equivalent of Jira's
+<code>issuetype</code> — the only candidate, <code>custom_item_id</code>, only exists when the
+workspace uses ClickUp's paid Custom Task Types feature, which this
+workspace does not. Since <code>Task.task_type</code> is a required field and <code>Task</code>
+couldn't change, every task from ClickUp gets a fixed <code>TaskType.TASK</code>, a
+call made by the project owner. This means the report loses the
+Bug/Story/Epic/Subtask distinction Jira used to provide; if the workspace
+ever adopts Custom Task Types, <code>_build_task</code> will need revisiting to map
+<code>custom_item_id</code> instead of using the fixed value.</p>
+<p><strong>The null-priority trade-off:</strong> ClickUp represents "no priority" as
+<code>priority: null</code> in the payload (instead of Jira's object with an absent
+<code>name</code>). The mapping (<code>urgent</code>→Highest, <code>high</code>→High, <code>normal</code>→Medium,
+<code>low</code>→Low) only applies when <code>priority</code> isn't null; when it is,
+<code>Task.priority</code> is left unset and Pydantic validation fails, discarding the
+task through the same path that already existed (decision 8) — the same
+behavior a priority-less Jira issue always had.</p>
+<h2 id="23-synced-clickup-folders-are-an-explicit-allowlist-not-every-folder-in-the-space">23. Synced ClickUp folders are an explicit allowlist, not "every folder in the Space"</h2>
+<p><code>ClickUpClient.fetch_tasks</code> fetches the whole Space configured in
+<code>CLICKUP_SPACE_ID</code> (<code>GET /team/{team_id}/task</code> with <code>space_ids[]=...</code>),
+which includes any folder that exists there, of any kind.
+<code>pipeline._filter_allowed_folders</code> runs right after and drops every task
+whose <code>folder.id</code> isn't in <code>CLICKUP_FOLDER_IDS</code> — a fixed list, configured
+in <code>.env</code>, of the folder IDs that actually represent a "turma" (today
+"Primeiro Ano" and "Segundo Ano") — before <code>EtlService</code> ever sees those
+tasks.</p>
+<p><strong>Why:</strong> the obvious alternative would be to automatically sync every
+folder that exists in the Space, with no fixed list. That was deliberately
+rejected: a folder unrelated to a "turma" could be created in the same
+Space later — an internal team-planning folder, say, or a temporary
+experiment — and nothing about it guarantees its tasks follow the same
+contract (<code>turma</code>, <code>area</code>, priorities) the rest of the pipeline expects.
+Without the allowlist, that folder would start feeding the pipeline, Teams
+alerts, and reports just by having been created in the Space, without
+anyone having made that call on purpose.</p>
+<p>This is the same "never change scope silently" philosophy already present
+in this project, just pointed the other way: decision 8 (never silently
+discard a record) and decision 18 (never silently delete an archived task)
+guard against <strong>losing</strong> data without warning; the folder allowlist guards
+against <strong>gaining</strong> scope without warning. In both cases, the principle is
+that a scope change — in or out — should be a deliberate act, not a side
+effect of something that happened in another system (Jira before, ClickUp
+now).</p>
+<p><strong>Trade-off:</strong> when a new turma is actually created (say, "Terceiro Ano"),
+syncing it requires a manual action: someone has to add the new folder's ID
+to <code>CLICKUP_FOLDER_IDS</code> and let the scheduled run pick it up. There's no
+automatic discovery of new turmas. That friction is deliberate — it's the
+price of never including a folder by accident.</p>
 
 
 

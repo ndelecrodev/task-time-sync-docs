@@ -916,30 +916,30 @@
 
 
 <h1 id="modelo-de-dados">Modelo de dados</h1>
-<blockquote>
-<p>Também publicado como site navegável em
-https://ndelecrodev.github.io/task-time-sync-docs/</p>
-</blockquote>
 <h2 id="modelos-python">Modelos Python</h2>
 <p>Definidos em <code>src/sop_pipeline/models/schemas.py</code>. São modelos Pydantic: uma
-issue do Jira que não satisfaça o contrato é descartada com um <code>warning</code>, em vez
-de derrubar a execução inteira.</p>
+tarefa do ClickUp que não satisfaça o contrato é descartada com um <code>warning</code>, em
+vez de derrubar a execução inteira.</p>
 <h3 id="identidade-de-colaboradores">Identidade de colaboradores</h3>
-<p>Como o Jira identifica pessoas pelo nome de exibição e o Clockify por e-mail, uma
-camada de mapeamento normaliza os dois para um nome canônico usado como chave de
-junção.</p>
+<p>Como o ClickUp identifica pessoas por <code>username</code>/e-mail do assignee e o Clockify
+por e-mail, uma camada de mapeamento normaliza os dois para um nome canônico
+usado como chave de junção.</p>
 <p><strong>Fonte editável:</strong> a aba <code>DIM_FUNCIONARIO</code> da planilha é onde alguém corrige ou
 adiciona colaboradores manualmente. Antes de cada execução, <code>EmployeeDataSyncService</code>
 lê essa aba com <code>ExcelReader</code> e grava as linhas na tabela <code>funcionarios</code> do
-Postgres via <code>PostgresClient.upsert_employee</code>, casando por <code>jira_email</code> ou
-<code>clockify_email</code>.</p>
-<p><strong>Duplicatas:</strong> a primeira linha a usar um dado <code>jira_email</code> ou <code>clockify_email</code>
+Postgres via <code>PostgresClient.upsert_employee</code>, casando por <code>clickup_email</code> ou
+<code>clockify_email</code> — a coluna, antes chamada <code>jira_email</code> por herança do schema
+implantado na era Jira, foi renomeada para <code>clickup_email</code> (ver
+<a href="../design-decisions/#22-a-fonte-de-tarefas-migrou-de-jira-para-clickup-so-na-camada-de-extracao-o-task-continua-sendo-o-contrato"><code>design-decisions.md</code></a>) para deixar de carregar um nome
+que não fazia mais sentido pós-migração; ela guarda o e-mail registrado do
+colaborador, casado contra o assignee do ClickUp.</p>
+<p><strong>Duplicatas:</strong> a primeira linha a usar um dado <code>clickup_email</code> ou <code>clockify_email</code>
 é sincronizada normalmente; qualquer linha seguinte que repita um dos dois é
 tratada como duplicata (<code>EmployeeDataSyncService._split_duplicates</code>), recebe um
 motivo e é gravada na aba <code>DUPLICADOS_REMOVIDOS</code> em vez de ser sincronizada.</p>
 <p><strong>Uso em runtime:</strong> <code>Settings.load_employee_registry</code> lê a tabela <code>funcionarios</code>
 já sincronizada e monta um <code>EmployeeRegistry</code>, usado pelo <code>EtlService</code> para
-normalizar <code>Task.assignee</code> (vindo do Jira) e <code>TimeEntry.employee</code> (vindo do
+normalizar <code>Task.assignee</code> (vindo do ClickUp) e <code>TimeEntry.employee</code> (vindo do
 Clockify) para o nome canônico.</p>
 <p><strong>Foto do colaborador:</strong> <code>funcionarios.photo_url</code> guarda a URL pública do
 Supabase Storage da foto do colaborador, ou <code>None</code> quando nenhuma foto foi
@@ -952,88 +952,113 @@ ser descartado silenciosamente. Segue a decisão de design #8: um registro ruim
 não derruba a execução inteira, e problemas de qualidade de dados ficam visíveis
 no relatório em vez de escondidos.</p>
 <h3 id="task"><code>Task</code></h3>
-<p>Uma issue do Jira normalizada. Chave de upsert: <code>task_id</code> (a <em>key</em> do Jira).</p>
+<p>Uma tarefa do ClickUp normalizada. Chave de upsert: <code>task_id</code> (o <code>id</code> do
+ClickUp).</p>
 <table>
 <thead>
 <tr>
 <th>Campo</th>
 <th>Tipo</th>
-<th>Origem no Jira</th>
+<th>Origem no ClickUp</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>task_id</code></td>
 <td><code>str</code></td>
-<td><code>key</code></td>
+<td><code>id</code></td>
 </tr>
 <tr>
 <td><code>title</code></td>
 <td><code>str</code></td>
-<td><code>fields.summary</code> (default <code>"No title"</code>)</td>
+<td><code>name</code> (default <code>"No title"</code>)</td>
 </tr>
 <tr>
 <td><code>assignee</code></td>
 <td><code>str</code></td>
-<td><code>fields.assignee.displayName</code></td>
+<td><code>assignees[*].username</code>/<code>.email</code>, normalizados individualmente e concatenados com <code>", "</code></td>
 </tr>
 <tr>
 <td><code>priority</code></td>
 <td><code>Priority</code></td>
-<td><code>fields.priority.name</code></td>
+<td><code>priority.priority</code> (<code>urgent</code>/<code>high</code>/<code>normal</code>/<code>low</code>), mapeado para o enum</td>
 </tr>
 <tr>
 <td><code>status</code></td>
 <td><code>str</code></td>
-<td><code>fields.status.name</code></td>
+<td><code>status.status</code></td>
 </tr>
 <tr>
 <td><code>area</code></td>
 <td><code>str \| None</code></td>
-<td>custom field configurado em <code>JIRA_CUSTOMFIELD_AREA</code></td>
+<td>opção resolvida do custom field <code>drop_down</code> configurado em <code>CLICKUP_AREA_FIELD_ID</code></td>
 </tr>
 <tr>
 <td><code>creation_date</code></td>
 <td><code>date</code></td>
-<td><code>fields.created</code></td>
+<td><code>date_created</code> (timestamp em milissegundos)</td>
 </tr>
 <tr>
 <td><code>due_date</code></td>
 <td><code>date \| None</code></td>
-<td><code>fields.duedate</code></td>
+<td><code>due_date</code> (timestamp em milissegundos)</td>
 </tr>
 <tr>
 <td><code>completion_date</code></td>
 <td><code>date \| None</code></td>
-<td><code>fields.resolutiondate</code></td>
+<td><code>date_closed</code> (timestamp em milissegundos)</td>
 </tr>
 <tr>
 <td><code>task_type</code></td>
 <td><code>TaskType</code></td>
-<td><code>fields.issuetype.name</code></td>
+<td>fixo em <code>TaskType.TASK</code> — ver <a href="../design-decisions/#22-a-fonte-de-tarefas-migrou-de-jira-para-clickup-so-na-camada-de-extracao-o-task-continua-sendo-o-contrato"><code>design-decisions.md</code></a></td>
 </tr>
 <tr>
 <td><code>creator</code></td>
 <td><code>str \| None</code></td>
-<td><code>fields.creator.displayName</code></td>
+<td><code>creator.username</code></td>
 </tr>
 <tr>
 <td><code>update_date</code></td>
 <td><code>date \| None</code></td>
-<td><code>fields.updated</code></td>
+<td><code>date_updated</code> (timestamp em milissegundos)</td>
 </tr>
 <tr>
 <td><code>assignee_email</code></td>
 <td><code>EmailStr \| None</code></td>
-<td><code>fields.assignee.emailAddress</code></td>
+<td><code>assignees[0].email</code>, com fallback em <code>EmployeeRegistry.get_registered_email</code></td>
 </tr>
 <tr>
 <td><code>tags</code></td>
 <td><code>list[str]</code></td>
-<td><code>fields.labels</code></td>
+<td><code>tags[*].name</code></td>
+</tr>
+<tr>
+<td><code>turma</code></td>
+<td><code>str</code></td>
+<td><code>folder.name</code> — lido direto do ClickUp, nunca digitado por alguém; ver <a href="../design-decisions/#23-as-pastas-do-clickup-sincronizadas-sao-uma-allowlist-explicita-nao-toda-pasta-do-space"><code>design-decisions.md</code></a></td>
 </tr>
 </tbody>
 </table>
+<p><strong>Múltiplos responsáveis:</strong> ao contrário do Jira, o ClickUp permite mais de um
+assignee por tarefa. Cada um é normalizado individualmente por
+<code>normalize_employee_identifier</code> (por e-mail quando presente, senão por
+<code>username</code>) e os nomes canônicos resultantes são concatenados em <code>assignee</code>. Só
+o e-mail do <strong>primeiro</strong> assignee alimenta <code>assignee_email</code>, porque uma
+@menção do Teams só pode apontar para uma pessoa — ver
+<a href="../design-decisions/#22-a-fonte-de-tarefas-migrou-de-jira-para-clickup-so-na-camada-de-extracao-o-task-continua-sendo-o-contrato"><code>design-decisions.md</code></a>.</p>
+<p><strong>Área (<code>drop_down</code> custom field):</strong> o ClickUp devolve <code>custom_fields</code> como uma
+lista de objetos, cada um com <code>id</code>, <code>name</code>, <code>type</code> e, opcionalmente, <code>value</code>.
+Para o campo do tipo <code>drop_down</code> configurado em <code>CLICKUP_AREA_FIELD_ID</code>,
+<code>value</code> é um <strong>índice</strong> dentro do array <code>type_config.options</code> do próprio
+campo, não o texto da opção — o índice é resolvido contra esse array para
+obter o nome da área. Quando o campo está ausente, não tem chave <code>value</code>, ou o
+índice não resolve, o resultado é <code>NO_AREA</code>.</p>
+<p><strong>Milissegundos:</strong> <code>date_created</code>, <code>due_date</code>, <code>date_closed</code> e <code>date_updated</code>
+chegam como strings de timestamp Unix em milissegundos (ex.:
+<code>"1753401600000"</code>), não em ISO 8601 como no Jira.
+<code>EtlService._parse_millis_to_date</code> converte cada um para uma <code>date</code> em
+America/Sao_Paulo, tratando <code>None</code>.</p>
 <p>Campos calculados (<code>@computed_field</code>), usados pela regra de alerta e pelo texto da
 notificação — <strong>não</strong> são gravados na planilha, que tem as próprias fórmulas:</p>
 <table>
@@ -1062,7 +1087,7 @@ notificação — <strong>não</strong> são gravados na planilha, que tem as pr
 para uma tarefa vencida, a linha da notificação vira "Tarefa atrasada há N
 dia(s)" (com N positivo); para uma tarefa no prazo, "Dias restantes: N
 dia(s)"; sem prazo definido, "Dias restantes: Indefinido".</p>
-<p>Quando o Jira não traz responsável ou área, o ETL usa os textos
+<p>Quando o ClickUp não traz responsável ou área, o ETL usa os textos
 <code>"There is no one responsible."</code> e <code>"There is no one area."</code> em vez de descartar a
 linha — a tarefa continua aparecendo no relatório.</p>
 <h3 id="timeentry"><code>TimeEntry</code></h3>
@@ -1115,12 +1140,12 @@ própria. Chave de upsert: <code>task_id</code>.</p>
 <tr>
 <td><code>task_id</code></td>
 <td><code>str</code></td>
-<td><code>key</code></td>
+<td><code>id</code></td>
 </tr>
 <tr>
 <td><code>description</code></td>
 <td><code>str \| None</code></td>
-<td><code>fields.description</code>, achatado do formato ADF para texto puro</td>
+<td><code>description</code>, com fallback em <code>text_content</code> quando ausente</td>
 </tr>
 </tbody>
 </table>
@@ -1147,10 +1172,13 @@ própria. Chave de upsert: <code>task_id</code>.</p>
 </tr>
 </tbody>
 </table>
-<p>Os valores de <code>Priority</code> e <code>TaskType</code> são exatamente as strings que a API do Jira
-devolve. Os de <code>DeadlineStatus</code> são exatamente as strings que a fórmula da coluna
-<code>status_prazo</code> produz no Excel. <strong>Nenhum desses valores pode ser traduzido</strong> — só
-os nomes dos membros do enum.</p>
+<p>Os valores de <code>Priority</code> são os rótulos históricos do Jira; o ETL mapeia os
+quatro níveis de prioridade do ClickUp (<code>urgent</code>/<code>high</code>/<code>normal</code>/<code>low</code>) para
+eles — ver <a href="../design-decisions/#22-a-fonte-de-tarefas-migrou-de-jira-para-clickup-so-na-camada-de-extracao-o-task-continua-sendo-o-contrato"><code>design-decisions.md</code></a>. <code>TaskType</code> fica
+fixo em <code>Task</code> para toda tarefa vinda do ClickUp, pelo mesmo motivo. Os
+valores de <code>DeadlineStatus</code> são exatamente as strings que a fórmula da coluna
+<code>status_prazo</code> produz no Excel. <strong>Nenhum desses valores pode ser traduzido</strong> —
+só os nomes dos membros do enum.</p>
 <hr />
 <h2 id="mapeamento-para-a-planilha">Mapeamento para a planilha</h2>
 <p>Convenções do arquivo <code>.xlsx</code>: nome de aba em MAIÚSCULAS, nome de tabela em
@@ -1169,7 +1197,7 @@ minúsculas, primeira coluna sempre é o ID usado no upsert.</p>
 <tr>
 <td><code>BASE_TAREFAS</code></td>
 <td><code>base_tarefas</code></td>
-<td>id, titulo, responsavel, area, prioridade, status, data_criacao, prazo, data_conclusao, <strong>dias_restantes</strong>, <strong>atrasado</strong>, <strong>status_prazo</strong>, tipo, criador, data_atualizacao, arquivada_em</td>
+<td>id, titulo, responsavel, area, prioridade, status, data_criacao, prazo, data_conclusao, <strong>dias_restantes</strong>, <strong>atrasado</strong>, <strong>status_prazo</strong>, tipo, criador, data_atualizacao, arquivada_em, turma</td>
 <td><code>save_tasks</code></td>
 </tr>
 <tr>
@@ -1202,8 +1230,8 @@ minúsculas, primeira coluna sempre é o ID usado no upsert.</p>
 apenas replica o texto da fórmula quando cria uma linha nova. <code>arquivada_em</code>
 também foge à regra: quem escreve nela é <code>ExcelWriter.mark_archived_tasks</code>, não
 <code>save_tasks</code>, e é a única coluna ainda tocada numa linha depois que a tarefa
-some do Jira — todo o resto da linha arquivada fica congelado no último valor
-conhecido, por design (ver decisão de design #19).</p>
+some do ClickUp — todo o resto da linha arquivada fica congelado no último
+valor conhecido, por design (ver decisão de design #19).</p>
 <p><code>Task</code> → <code>BASE_TAREFAS</code> é definido pelo dict <code>TASK_COLUMN_MAP</code> em
 <code>integrations/excel_writer.py</code>. O lado esquerdo é o cabeçalho literal da coluna na
 planilha (em português, por isso não é traduzido); o lado direito é o nome do
@@ -1297,7 +1325,7 @@ gravação equivalente na aba correspondente do <code>.xlsx</code>.</p>
 </tr>
 <tr>
 <td><code>tarefas</code></td>
-<td>Uma linha por issue do Jira; <code>responsavel_id</code> é <code>NULL</code> quando o colaborador não foi mapeado. <code>arquivada_em</code> guarda o timestamp em que a tarefa deixou de aparecer no <code>JIRA_JQL</code> (<code>NULL</code> enquanto ativa); a linha nunca é apagada.</td>
+<td>Uma linha por tarefa do ClickUp; <code>responsavel_id</code> é <code>NULL</code> quando o colaborador não foi mapeado. <code>arquivada_em</code> guarda o timestamp em que a tarefa deixou de aparecer na busca (<code>CLICKUP_SPACE_ID</code> + <code>CLICKUP_FOLDER_IDS</code>, <code>NULL</code> enquanto ativa); a linha nunca é apagada. <code>turma</code> guarda o nome da pasta do ClickUp (ver <a href="../design-decisions/#23-as-pastas-do-clickup-sincronizadas-sao-uma-allowlist-explicita-nao-toda-pasta-do-space"><code>design-decisions.md</code></a>), lido direto da API, nunca digitado por alguém.</td>
 <td><code>upsert_task</code> (arquivamento: <code>archive_missing_tasks</code>)</td>
 </tr>
 <tr>

@@ -450,10 +450,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#flow-of-a-run" class="md-nav__link">
+  <a href="#execution-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flow of a run
+        Execution flow
       
     </span>
   </a>
@@ -688,10 +688,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#flow-of-a-run" class="md-nav__link">
+  <a href="#execution-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flow of a run
+        Execution flow
       
     </span>
   </a>
@@ -760,61 +760,84 @@
 
 
 <h1 id="architecture">Architecture</h1>
-<h2 id="flow-of-a-run">Flow of a run</h2>
-<p>A run (<code>sop_pipeline.pipeline.run</code>) is a linear sequence with three sync
-steps, isolated from each other.</p>
+<h2 id="execution-flow">Execution flow</h2>
+<p>An execution (<code>sop_pipeline.pipeline.run</code>) is a linear sequence with three isolated synchronization steps.</p>
 <pre><code> 1. StorageClient.download_file
     B2 ──────────────────────────────▶ planilha_temp.xlsx (local disk)
 
- 2. EmployeeSyncService.sync
-    ExcelReader.read_employees        ── DIM_FUNCIONARIO sheet
+ 2. EmployeeDataSyncService.sync + .sync_areas
+    ExcelReader.read_employees        ── DIM_FUNCIONARIO tab
         │  list[dict]
         ▼
     PostgresClient.upsert_employee  ─▶ funcionarios table (Postgres/Supabase)
-    ExcelWriter.save_duplicates     ─▶ DUPLICADOS_REMOVIDOS sheet (rows with a repeated email)
+    ExcelWriter.save_duplicates     ─▶ DUPLICADOS_REMOVIDOS tab (repeated-email rows)
 
- 3. sync_jira
-    JiraClient.fetch_tasks(JIRA_JQL)          ── pagination via nextPageToken
-        │  raw list[dict]
+    name_to_id = {canonical_name: id}, built from funcionarios (Postgres)
+
+    ExcelReader.read_dim_employee_area   ── DIM_FUNCIONARIO_AREA tab
+    ExcelReader.read_fato_employee_area  ── FATO_FUNCIONARIO_AREA tab
+        │  list[dict]
+        ▼
+    PostgresClient.upsert_area_and_link ─▶ areas, funcionario_area tables (Postgres/Supabase)
+
+ 3. sync_clickup
+    ClickUpClient.fetch_tasks(CLICKUP_TEAM_ID, CLICKUP_SPACE_ID) ── pagination by
+                               page number, GET /team/{team_id}/task
+        │  raw list[dict] (every task in the Space, from any folder)
+        ▼
+    pipeline._filter_allowed_folders
+        │  drops tasks whose folder.id isn't in CLICKUP_FOLDER_IDS
         ▼
     EtlService.transform_tasks    ─▶ list[Task]
     EtlService.transform_details  ─▶ list[TaskDetail]
         │
         ▼
-    ExcelWriter.save_tasks    ─▶ BASE_TAREFAS sheet
-    ExcelWriter.save_tags     ─▶ DIM_ETIQUETAS + FATO_TAREFA_ETIQUETA sheets
-    ExcelWriter.save_details  ─▶ DETALHES_TAREFA sheet
+    ExcelWriter.save_tasks    ─▶ tab BASE_TAREFAS
+    ExcelWriter.save_tags     ─▶ tabs DIM_ETIQUETAS + FATO_TAREFA_ETIQUETA
+    ExcelWriter.save_details  ─▶ tab DETALHES_TAREFA
     PostgresClient.upsert_task / upsert_task_detail / upsert_tag_and_link
                                ─▶ tarefas, detalhes_tarefa, etiquetas, tarefa_etiqueta tables
+    PostgresClient.archive_missing_tasks
+                               ─▶ marks tarefas.arquivada_em on tasks missing from the fetch (never deletes)
 
  4. sync_clockify
     ClockifyClient.list_users
         │  for each user:
         ▼
-    ClockifyClient.fetch_time_entries(user_id)  ── pagination via the Last-Page header
+    ClockifyClient.fetch_time_entries(user_id)  ── pagination by header Last-Page
         │  raw list[dict]
         ▼
     EtlService.transform_time_entries ─▶ list[TimeEntry]
         │
         ▼
-    ExcelWriter.save_hours       ─▶ BASE_HORAS sheet
+    ExcelWriter.save_hours       ─▶ tab BASE_HORAS
     PostgresClient.upsert_time_entry ─▶ horas table
 
  5. StorageClient.upload_file
     planilha_temp.xlsx ──────────────▶ B2   (overwrites the object)
 
- 6. process_alerts (uses the Tasks from step 3)
-    AlertService.tasks_to_alert  ─▶ list[Task] within the alert window
+ 6. process_alerts (uses Tasks from step 3)
+    AlertService.tasks_to_alert  ─▶ list[Task] within alert window
         │
         ▼
-    Notifier.send_alert ─▶ POST to the Teams webhook for the task's area
+    Notifier.send_alert ─▶ POST to Teams webhook for the task's area
 
  7. Heartbeat
-    GET BETTERSTACK_HEARTBEAT_URL   ── only reached if the upload succeeded
+    GET BETTERSTACK_HEARTBEAT_URL   ── only reached if upload succeeded
 </code></pre>
-<p>Postgres runs in parallel with the spreadsheet, not in its place: steps 3
+<p>Postgres runs in parallel with the spreadsheet, not instead of it: steps 3
 and 4 write the same information to both destinations, one upsert per row
 in each.</p>
+<p><code>ExcelReader.read_employees</code>, <code>read_dim_employee_area</code>, and <code>read_fato_employee_area</code>
+are thin wrappers over a single generic method, <code>read_sheet_as_dicts(file_path,
+sheet_name, table_name)</code>, which holds the logic for opening the workbook, finding
+the table, and building the list of row dicts. Each wrapper only fixes the sheet
+and table name it reads.</p>
+<p>Tasks that disappear from the configured Space/folders result (closed out of
+scope, moved, deleted) are not removed from Postgres: <code>PostgresClient.archive_missing_tasks</code>
+stamps <code>tarefas.arquivada_em</code> with the current run's timestamp on every row
+whose <code>task_id</code> didn't come back in the fetch, keeping the full history instead
+of deleting it.</p>
 <h2 id="layers">Layers</h2>
 <table>
 <thead>
@@ -827,28 +850,28 @@ in each.</p>
 <tbody>
 <tr>
 <td><strong>Clients</strong></td>
-<td><code>clients/jira_client.py</code>, <code>clients/clockify_client.py</code>, <code>clients/postgres_client.py</code></td>
-<td>Handle HTTP/SQL and pagination. <code>PostgresClient</code> upserts into the Supabase schema via SQLAlchemy; the other two return raw <code>dict</code>s, without interpreting anything.</td>
+<td><code>clients/clickup_client.py</code>, <code>clients/clockify_client.py</code>, <code>clients/postgres_client.py</code></td>
+<td>Speak HTTP/SQL and pagination. <code>PostgresClient</code> upserts into the Supabase schema through SQLAlchemy; the other two return raw <code>dict</code>, without interpreting anything.</td>
 </tr>
 <tr>
 <td><strong>Services</strong></td>
-<td><code>services/etl_service.py</code>, <code>services/alert_service.py</code>, <code>services/employee_sync_service.py</code></td>
-<td>Business logic. <code>EtlService</code> and <code>AlertService</code> do no network or file I/O; <code>EmployeeSyncService</code> is the deliberate exception, since it orchestrates <code>ExcelReader</code> and <code>PostgresClient</code> to sync <code>DIM_FUNCIONARIO</code>.</td>
+<td><code>services/etl_service.py</code>, <code>services/alert_service.py</code>, <code>services/employee_data_sync_service.py</code></td>
+<td>Business logic. <code>EtlService</code> and <code>AlertService</code> do no network or file I/O; <code>EmployeeDataSyncService</code> (renamed from <code>EmployeeSyncService</code>) is the deliberate exception, since it orchestrates <code>ExcelReader</code> and <code>PostgresClient</code> to sync identity (<code>DIM_FUNCIONARIO</code>) and area links (<code>DIM_FUNCIONARIO_AREA</code> + <code>FATO_FUNCIONARIO_AREA</code>) into Postgres.</td>
 </tr>
 <tr>
 <td><strong>Integrations</strong></td>
 <td><code>integrations/excel_writer.py</code>, <code>notifier.py</code>, <code>storage_client.py</code></td>
-<td>Pipeline outputs. Each one knows about a single external destination.</td>
+<td>Pipeline outputs. Each knows one external destination.</td>
 </tr>
 <tr>
 <td><strong>Models</strong></td>
 <td><code>models/schemas.py</code></td>
-<td>Contract between layers. Validated via Pydantic.</td>
+<td>Contract between layers. Validation via Pydantic.</td>
 </tr>
 <tr>
 <td><strong>Config</strong></td>
 <td><code>config/settings.py</code></td>
-<td>The only place that reads the environment.</td>
+<td>Single point that reads the environment.</td>
 </tr>
 <tr>
 <td><strong>Errors</strong></td>
@@ -857,18 +880,14 @@ in each.</p>
 </tr>
 </tbody>
 </table>
-<p>Dependencies always point inward: <code>pipeline</code> → <code>integrations</code>/<code>services</code> →
-<code>models</code>/<code>config</code>. No client knows about <code>ExcelWriter</code>, and <code>ExcelWriter</code>
-doesn't know about Jira.</p>
+<p>Dependencies flow inward: <code>pipeline</code> → <code>integrations</code>/<code>services</code> →
+<code>models</code>/<code>config</code>. No client knows about <code>ExcelWriter</code>, and <code>ExcelWriter</code> doesn't
+know about ClickUp.</p>
 <h2 id="failure-isolation">Failure isolation</h2>
-<p>Each of the three sync steps runs in its own <code>try/except</code> inside <code>run()</code>.
-A Jira outage doesn't prevent collecting Clockify hours, and vice versa.
-Each failure is logged and sent to Sentry, and the run continues.</p>
-<p>If <code>sync_jira</code> fails, the alert step is <strong>skipped</strong> with an explicit
-<code>warning</code>, instead of running against an empty list. The distinction
-matters: "Jira didn't respond" isn't the same thing as "Jira has no tasks
-at risk," and treating the two the same made a broken run look clean in
-the log.</p>
+<p>The three synchronization steps each run in their own <code>try/except</code> inside
+<code>run()</code>. ClickUp unavailability doesn't prevent Clockify hours collection, and vice versa. Each failure is logged and sent to Sentry, and execution continues.</p>
+<p>If <code>sync_clickup</code> fails, the alert step is <strong>skipped</strong> with an explicit <code>warning</code>, instead of running against an empty list. The distinction matters: "ClickUp didn't respond"
+is not the same as "ClickUp has no at-risk tasks", and treating both situations equally would make a broken execution look clean in the log.</p>
 <h2 id="observability">Observability</h2>
 <table>
 <thead>
@@ -880,24 +899,23 @@ the log.</p>
 <tbody>
 <tr>
 <td><strong>Sentry</strong></td>
-<td>Receives the exceptions caught in the three steps, with stack trace.</td>
+<td>Receives exceptions caught in the three steps, with stack trace.</td>
 </tr>
 <tr>
 <td><strong>Better Stack (logs)</strong></td>
-<td><code>LogtailHandler</code> is attached to the root <code>logging</code>; every <code>logger.info/warning/error</code> call goes there.</td>
+<td><code>LogtailHandler</code> is attached to the root <code>logging</code>; all <code>logger.info/warning/error</code> go there.</td>
 </tr>
 <tr>
 <td><strong>Better Stack (heartbeat)</strong></td>
-<td>A <code>GET</code> at the end of the run. It's deliberately <strong>outside</strong> any <code>try/except</code>: if the spreadsheet upload fails, that line is never reached and Better Stack flags the run as missed. Putting it inside a <code>try</code> would mark a run that delivered nothing as a success.</td>
+<td>A <code>GET</code> at the end of execution. Intentionally <strong>outside</strong> any <code>try/except</code>: if the spreadsheet upload fails, the line is never reached and Better Stack flags the missing execution. Wrapping it in a <code>try</code> would mark a failed execution as successful.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="concurrency-and-scheduling">Concurrency and scheduling</h2>
-<p>The pipeline is single-threaded and designed to run on a schedule (cron,
-GitHub Actions, etc.). <strong>Two simultaneous runs are not safe</strong>: both would
-download the same spreadsheet, write to separate local copies, and
-whichever uploads last would overwrite the other. The bucket isn't used
-with a lock.</p>
+<p>The pipeline is single-threaded and designed to run on a schedule (cron, GitHub
+Actions, etc.). <strong>Two simultaneous executions are not safe</strong>: both would download the
+same spreadsheet, write to separate local copies, and the last one to upload would
+overwrite the other. The bucket is not used with locks.</p>
 
 
 

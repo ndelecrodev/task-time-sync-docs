@@ -726,10 +726,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#21-etlservice_build_task-recorre-a-employeeregistryget_jira_email-quando-o-jira-nao-informa-o-e-mail-do-assignee" class="md-nav__link">
+  <a href="#21-etlservice_build_task-recorre-a-employeeregistryget_registered_email-quando-a-fonte-de-tarefas-nao-informa-o-e-mail-do-assignee" class="md-nav__link">
     <span class="md-ellipsis">
       
-        21. EtlService._build_task recorre a EmployeeRegistry.get_jira_email quando o Jira não informa o e-mail do assignee
+        21. EtlService._build_task recorre a EmployeeRegistry.get_registered_email quando a fonte de tarefas não informa o e-mail do assignee
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#22-a-fonte-de-tarefas-migrou-de-jira-para-clickup-so-na-camada-de-extracao-o-task-continua-sendo-o-contrato" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        22. A fonte de tarefas migrou de Jira para ClickUp só na camada de extração; o Task continua sendo o contrato
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#23-as-pastas-do-clickup-sincronizadas-sao-uma-allowlist-explicita-nao-toda-pasta-do-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        23. As pastas do ClickUp sincronizadas são uma allowlist explícita, não "toda pasta do Space"
       
     </span>
   </a>
@@ -1084,10 +1106,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#21-etlservice_build_task-recorre-a-employeeregistryget_jira_email-quando-o-jira-nao-informa-o-e-mail-do-assignee" class="md-nav__link">
+  <a href="#21-etlservice_build_task-recorre-a-employeeregistryget_registered_email-quando-a-fonte-de-tarefas-nao-informa-o-e-mail-do-assignee" class="md-nav__link">
     <span class="md-ellipsis">
       
-        21. EtlService._build_task recorre a EmployeeRegistry.get_jira_email quando o Jira não informa o e-mail do assignee
+        21. EtlService._build_task recorre a EmployeeRegistry.get_registered_email quando a fonte de tarefas não informa o e-mail do assignee
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#22-a-fonte-de-tarefas-migrou-de-jira-para-clickup-so-na-camada-de-extracao-o-task-continua-sendo-o-contrato" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        22. A fonte de tarefas migrou de Jira para ClickUp só na camada de extração; o Task continua sendo o contrato
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#23-as-pastas-do-clickup-sincronizadas-sao-uma-allowlist-explicita-nao-toda-pasta-do-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        23. As pastas do ClickUp sincronizadas são uma allowlist explícita, não "toda pasta do Space"
       
     </span>
   </a>
@@ -1390,30 +1434,134 @@ que o progresso realmente era na data que ela representa — apagando
 silenciosamente o próprio histórico que a aba deveria guardar. Gravar o
 valor no momento do snapshot é o que faz da linha um registro histórico de
 verdade, em vez de mais uma visão do presente.</p>
-<h2 id="21-etlservice_build_task-recorre-a-employeeregistryget_jira_email-quando-o-jira-nao-informa-o-e-mail-do-assignee">21. <code>EtlService._build_task</code> recorre a <code>EmployeeRegistry.get_jira_email</code> quando o Jira não informa o e-mail do assignee</h2>
-<p>Quando <code>fields.assignee.emailAddress</code> vem nulo mas há um assignee de fato
-(<code>fields.assignee</code> não é <code>None</code>), <code>_build_task</code> primeiro normaliza o
-<code>displayName</code> do Jira para o nome canônico via
+<h2 id="21-etlservice_build_task-recorre-a-employeeregistryget_registered_email-quando-a-fonte-de-tarefas-nao-informa-o-e-mail-do-assignee">21. <code>EtlService._build_task</code> recorre a <code>EmployeeRegistry.get_registered_email</code> quando a fonte de tarefas não informa o e-mail do assignee</h2>
+<p>Quando um assignee de fato existe mas não vem com e-mail, <code>_build_task</code>
+primeiro normaliza o identificador bruto (hoje <code>username</code> do ClickUp; era
+<code>displayName</code> do Jira) para o nome canônico via
 <code>normalize_employee_identifier</code>, e só então chama
-<code>EmployeeRegistry.get_jira_email</code> com esse nome já canonicalizado, nunca
-com o <code>displayName</code> bruto. O fallback não roda no branch de tarefa sem
-responsável (<code>fields.assignee is None</code>), onde <code>assignee</code> é o sentinel
-<code>NO_RESPONSIBLE</code> — chamar <code>get_jira_email</code> com um sentinel como se fosse
-nome de pessoa não faz sentido e nunca deve acontecer.</p>
-<p><strong>Por quê:</strong> as configurações de privacidade de visibilidade de e-mail por
-usuário do Jira Cloud (uma mudança da era GDPR) podem deixar
-<code>emailAddress</code> nulo mesmo para um assignee corretamente definido e
-visível em qualquer outro lugar do Jira — isso é comportamento esperado
-do Jira, não um dado faltando por falha deste projeto. Usar o nome já
-canonicalizado, e não o <code>displayName</code> bruto do Jira, é essencial: os
-nomes cadastrados na <code>DIM_FUNCIONARIO</code> podem divergir do <code>displayName</code>
-que o Jira retorna, e foi exatamente essa divergência que causou um bug
-anterior envolvendo um colaborador chamado "Miguel Felix Cardozo de
-Tomy" — buscar pelo nome bruto teria o mesmo problema aqui. Com isso, o
-cadastro de colaboradores (<code>DIM_FUNCIONARIO</code> / <code>EmployeeRegistry</code>) passa
-a ser a segunda fonte de verdade para o e-mail de um colaborador,
-especificamente para permitir @menções no Teams quando o próprio Jira
-não fornece um e-mail.</p>
+<code>EmployeeRegistry.get_registered_email</code> com esse nome já canonicalizado,
+nunca com o identificador bruto. O fallback não roda no branch de tarefa sem
+responsável (lista de assignees vazia), onde <code>assignee</code> é o sentinel
+<code>NO_RESPONSIBLE</code> — chamar <code>get_registered_email</code> com um sentinel como se
+fosse nome de pessoa não faz sentido e nunca deve acontecer. O método se
+chamava <code>get_jira_email</code> até a migração para ClickUp (decisão 22); foi
+renomeado porque passou a resolver o e-mail registrado do colaborador
+independente da fonte de tarefas, e não apenas o do Jira.</p>
+<p><strong>Por quê:</strong> configurações de privacidade de visibilidade de e-mail por
+usuário — no Jira Cloud, uma mudança da era GDPR; no ClickUp, uma
+possibilidade equivalente — podem deixar o e-mail do assignee nulo mesmo
+para alguém corretamente atribuído e visível em qualquer outro lugar da
+ferramenta. Usar o nome já canonicalizado, e não o identificador bruto da
+fonte, é essencial: os nomes cadastrados na <code>DIM_FUNCIONARIO</code> podem divergir
+do que a fonte de tarefas retorna, e foi exatamente essa divergência que
+causou um bug anterior envolvendo um colaborador chamado "Miguel Felix
+Cardozo de Tomy" — buscar pelo nome bruto teria o mesmo problema aqui. Com
+isso, o cadastro de colaboradores (<code>DIM_FUNCIONARIO</code> / <code>EmployeeRegistry</code>)
+passa a ser a segunda fonte de verdade para o e-mail de um colaborador,
+especificamente para permitir @menções no Teams quando a própria fonte de
+tarefas não fornece um e-mail.</p>
+<h2 id="22-a-fonte-de-tarefas-migrou-de-jira-para-clickup-so-na-camada-de-extracao-o-task-continua-sendo-o-contrato">22. A fonte de tarefas migrou de Jira para ClickUp só na camada de extração; o <code>Task</code> continua sendo o contrato</h2>
+<p><code>clients/jira_client.py</code> foi substituído por <code>clients/clickup_client.py</code>, e
+<code>EtlService._build_task</code>/<code>transform_details</code> foram reescritos para o formato
+do ClickUp (lista de assignees, <code>custom_fields</code> como lista, timestamps em
+milissegundos, etc. — ver <a href="../data-model/"><code>data-model.md</code></a>). O Clockify, a
+saída Excel, a saída Postgres, os alertas do Teams, a resolução de identidade
+de colaboradores e o arquivamento de tarefas continuam exatamente como
+estavam: nenhum desses módulos conhecia o Jira diretamente, só o <code>Task</code>
+(<code>models/schemas.py</code>), e o <code>Task</code> não mudou.</p>
+<p><strong>Por quê:</strong> o projeto trocou de ferramenta de gestão de tarefas, mas o
+esquema do Postgres, as fórmulas e abas da planilha, e os fluxos de alerta do
+Teams não têm motivo para mudar por causa disso — são todos consumidores do
+modelo <code>Task</code>, não da API de origem. Manter o <code>Task</code> intacto (a decisão mais
+importante desta migração) transformou uma troca de fornecedor em uma mudança
+contida à camada de extração: só o client HTTP e o mapeamento dict→<code>Task</code>
+precisaram ser reescritos. Isso confirma, na prática, o desenho descrito na
+decisão de <a href="../architecture/#camadas">arquitetura</a>: "nenhum client conhece o
+<code>ExcelWriter</code>, e o <code>ExcelWriter</code> não conhece o Jira" — agora vale trocando
+"Jira" por "ClickUp".</p>
+<p>Identificadores que são <strong>dados</strong>, não código — a coluna <code>funcionarios.jira_email</code>
+no Postgres, o cabeçalho <code>jira_email</code> na aba <code>DIM_FUNCIONARIO</code> do Excel, e o
+campo <code>EmployeeMapping.jira_email</code> que espelha os dois — foram inicialmente
+mantidos com o nome antigo, pela mesma razão da decisão 6: renomeá-los
+quebraria o casamento em runtime contra o schema já implantado no Supabase e
+contra a planilha real, sem erro de importação para avisar. Só o método
+<code>EmployeeRegistry.get_jira_email</code> foi renomeado nesse momento (decisão 21),
+por ser código, não dado.</p>
+<p><strong>Renomeação posterior de <code>jira_email</code> para <code>clickup_email</code>:</strong> numa tarefa
+seguinte, os três identificadores de dados acima foram de fato renomeados —
+a coluna <code>funcionarios.jira_email</code> e sua check constraint <code>check_email_jira</code>
+no Postgres, o cabeçalho <code>jira_email</code> na aba <code>DIM_FUNCIONARIO</code> do Excel, e o
+campo <code>EmployeeMapping.jira_email</code>, todos passaram a <code>clickup_email</code> /
+<code>check_email_clickup</code>. A justificativa: diferente do rename de código feito
+na decisão 21 (adiado até o próprio símbolo deixar de fazer sentido), manter
+um identificador de dados chamado <code>jira_email</code> por tempo indefinido — agora
+que o projeto não fala mais com o Jira — era o tipo de nome que confunde
+sem necessidade a próxima pessoa que ler o schema, sem nenhum benefício de
+compatibilidade real: a coluna e o cabeçalho podiam ser renomeados atômica e
+deliberadamente (migração de schema no Postgres, atualização manual do
+cabeçalho no Excel via Claude for Excel, e o campo Python correspondente),
+ao contrário de uma renomeação silenciosa e não coordenada. O nome escolhido,
+<code>clickup_email</code>, segue a convenção já usada pela coluna irmã
+<code>clockify_email</code> — nomear pelo sistema concreto integrado, não por um termo
+genérico como "task_source_email" — e é o mesmo padrão dos identificadores
+<code>CLICKUP_*</code> já presentes em <code>Settings</code> e do módulo <code>clients/clickup_client.py</code>.</p>
+<p><strong>Múltiplos responsáveis, e o trade-off do @mention:</strong> diferente do Jira, o
+ClickUp permite mais de um assignee por tarefa. Cada assignee é normalizado
+individualmente e os nomes canônicos são concatenados em <code>Task.assignee</code>
+(<code>"Nicolas Delecrode, Daniel Nogueira"</code>), decisão do dono do projeto. Mas
+<code>Task.assignee_email</code> continua sendo um único e-mail — ele alimenta uma única
+@menção no Teams, e uma @menção não pode apontar para várias pessoas ao mesmo
+tempo — então só o e-mail do <strong>primeiro</strong> assignee é usado. Uma tarefa com
+múltiplos responsáveis sempre notifica apenas o primeiro deles por e-mail;
+os demais aparecem no relatório (na coluna <code>responsavel</code> da planilha e em
+<code>tarefas</code> no Postgres) mas não recebem @menção direta.</p>
+<p><strong>Trade-off do <code>task_type</code>:</strong> o ClickUp não tem um equivalente direto ao
+<code>issuetype</code> do Jira — o único candidato, <code>custom_item_id</code>, só existe quando o
+workspace usa a funcionalidade paga de Custom Task Types do ClickUp, o que
+não é o caso deste workspace. Como <code>Task.task_type</code> é campo obrigatório e o
+<code>Task</code> não podia mudar, toda tarefa vinda do ClickUp recebe <code>TaskType.TASK</code>
+fixo, decisão do dono do projeto. Isso significa que o relatório perde a
+distinção Bug/Story/Epic/Subtask que existia com o Jira; se o workspace algum
+dia adotar Custom Task Types, <code>_build_task</code> precisará ser revisitado para
+mapear <code>custom_item_id</code> em vez de usar o valor fixo.</p>
+<p><strong>Trade-off da prioridade nula:</strong> o ClickUp representa "sem prioridade" como
+<code>priority: null</code> no payload (em vez do objeto Jira com <code>name</code> ausente). O
+mapeamento (<code>urgent</code>→Highest, <code>high</code>→High, <code>normal</code>→Medium, <code>low</code>→Low) só se
+aplica quando <code>priority</code> não é nulo; quando é nulo, <code>Task.priority</code> fica sem
+valor e a validação do Pydantic falha, descartando a tarefa pelo mesmo
+caminho que já existia (decisão 8) — mesmo comportamento que uma issue do
+Jira sem prioridade sempre teve.</p>
+<h2 id="23-as-pastas-do-clickup-sincronizadas-sao-uma-allowlist-explicita-nao-toda-pasta-do-space">23. As pastas do ClickUp sincronizadas são uma allowlist explícita, não "toda pasta do Space"</h2>
+<p><code>ClickUpClient.fetch_tasks</code> busca todo o Space configurado em
+<code>CLICKUP_SPACE_ID</code> (<code>GET /team/{team_id}/task</code> com <code>space_ids[]=...</code>), o que
+inclui qualquer pasta que exista ali, de qualquer natureza.
+<code>pipeline._filter_allowed_folders</code> roda logo em seguida e descarta toda
+tarefa cujo <code>folder.id</code> não esteja em <code>CLICKUP_FOLDER_IDS</code> — uma lista fixa,
+configurada em <code>.env</code>, dos IDs das pastas que representam de fato uma
+"turma" (hoje "Primeiro Ano" e "Segundo Ano") — antes mesmo de <code>EtlService</code>
+enxergar essas tarefas.</p>
+<p><strong>Por quê:</strong> a alternativa óbvia seria sincronizar automaticamente toda pasta
+que existir no Space, sem lista fixa. Isso foi deliberadamente rejeitado: uma
+pasta sem relação com uma "turma" pode ser criada no mesmo Space no futuro —
+por exemplo, uma pasta de planejamento interno da equipe, ou um experimento
+temporário — e nada nela garante que suas tarefas sigam o mesmo contrato
+(<code>turma</code>, <code>area</code>, prioridades) que o resto do pipeline espera. Sem a
+allowlist, essa pasta começaria a alimentar o pipeline, os alertas do Teams e
+os relatórios apenas por ter sido criada no Space, sem ninguém ter decidido
+isso conscientemente.</p>
+<p>Essa é a mesma filosofia de "nunca mudar de escopo silenciosamente" que já
+aparece neste projeto, só que na direção oposta: a decisão 8 (nunca
+descartar um registro silenciosamente) e a decisão 18 (nunca apagar uma
+tarefa arquivada silenciosamente) protegem contra <strong>perder</strong> dado sem
+aviso; a allowlist de pastas protege contra <strong>ganhar</strong> escopo sem aviso.
+Em ambos os casos, o princípio é que uma mudança de escopo — para dentro ou
+para fora — deve ser um ato deliberado, não um efeito colateral de algo
+que aconteceu em outro sistema (o Jira antes, o ClickUp agora).</p>
+<p><strong>Trade-off:</strong> quando uma nova turma for criada de fato (por exemplo,
+"Terceiro Ano"), sincronizá-la exige uma ação manual: alguém precisa
+adicionar o ID da nova pasta a <code>CLICKUP_FOLDER_IDS</code> e reiniciar a execução
+agendada. Não há descoberta automática de novas turmas. Esse atrito é
+proposital — é o preço de nunca incluir uma pasta por engano.</p>
 
 
 
